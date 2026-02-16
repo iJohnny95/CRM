@@ -119,7 +119,7 @@ app.post('/api/generate-leads', authenticate, (req, res) => {
     console.log(`[${new Date().toISOString()}] Spawning process: python ${args.join(' ')}`)
     console.log(`[${new Date().toISOString()}] Working directory: ${ROOT_DIR}`)
 
-    const childProcess = spawn('python', args, {
+    const childProcess = spawn('python3', args, {
         cwd: ROOT_DIR,
         env: {
             ...process.env,
@@ -267,7 +267,7 @@ app.post('/api/test-connection', (req, res) => {
     let isComplete = false
     let exitCode = null
 
-    const childProcess = spawn('python', ['main.py', 'test'], {
+    const childProcess = spawn('python3', ['main.py', 'test'], {
         cwd: ROOT_DIR,
         env: {
             ...process.env,
@@ -305,7 +305,7 @@ app.post('/api/test-connection', (req, res) => {
 app.get('/api/presets', (req, res) => {
     const output = []
 
-    const childProcess = spawn('python', ['main.py', 'presets'], {
+    const childProcess = spawn('python3', ['main.py', 'presets'], {
         cwd: ROOT_DIR,
         env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
     })
@@ -323,7 +323,7 @@ app.get('/api/presets', (req, res) => {
 app.get('/api/types', (req, res) => {
     const output = []
 
-    const childProcess = spawn('python', ['main.py', 'types'], {
+    const childProcess = spawn('python3', ['main.py', 'types'], {
         cwd: ROOT_DIR,
         env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
     })
@@ -416,7 +416,7 @@ if __name__ == "__main__":
     const tempScriptPath = path.join(ROOT_DIR, 'temp_fix_types.py')
     fs.writeFileSync(tempScriptPath, tempScript)
 
-    const pythonProcess = spawn('python', [tempScriptPath], {
+    const pythonProcess = spawn('python3', [tempScriptPath], {
         cwd: ROOT_DIR,
         env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
     })
