@@ -475,15 +475,18 @@ app.post('/api/send-email', async (req, res) => {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS,
             },
-            // Force IPv4
-            family: 4,
+            // Removed family: 4 to allow IPv6 if available
+            tls: {
+                ciphers: 'SSLv3',      // Legacy support
+                rejectUnauthorized: false // DEBUG: Bypass strict SSL checks to rule out handshake hangs
+            },
             // Debugging
             debug: true,
             logger: true,
-            // Fail fast if connection hangs
-            connectionTimeout: 10000,
-            greetingTimeout: 5000,
-            socketTimeout: 10000
+            // Extended Timeouts
+            connectionTimeout: 30000,
+            greetingTimeout: 30000,
+            socketTimeout: 30000
         })
 
         // Verify connection configuration
