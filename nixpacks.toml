@@ -1,8 +1,16 @@
-[phases.setup]
-nixPkgs = ["nodejs_22", "python311", "python311Packages.pip"]
+# Nixpacks configuration for multi-language deployment (Node.js + Python)
+providers = ["node", "python"]
+
+[variables]
+NPM_CONFIG_PRODUCTION = "false"
 
 [phases.install]
-cmds = ["npm install", "python3 -m pip install -r requirements.txt"]
+dependsOn = ["setup"]
+cmds = [
+  "npm install",
+  "python3 -m pip install --upgrade pip",
+  "python3 -m pip install -r requirements.txt"
+]
 
 [phases.start]
 cmd = "node crm/server.mjs"
