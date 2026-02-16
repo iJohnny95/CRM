@@ -1,6 +1,3 @@
-# Nixpacks configuration for multi-language deployment (Node.js + Python)
-providers = ["node", "python"]
-
 [phases.setup]
 nixPkgs = ["nodejs_20", "python311", "python311Packages.pip"]
 
