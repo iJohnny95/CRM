@@ -472,6 +472,8 @@ app.post('/api/send-email', async (req, res) => {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS,
             },
+            // Force IPv4
+            family: 4,
             // Fail fast if connection hangs
             connectionTimeout: 10000, // 10 seconds
             greetingTimeout: 5000,
