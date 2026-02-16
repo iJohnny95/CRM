@@ -1,0 +1,11 @@
+node_modules
+crm/node_modules
+.env
+crm/.env
+.git
+data
+crm.db
+crm.db-journal
+*.log
+.vscode
+.idea
