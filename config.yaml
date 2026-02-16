@@ -1,0 +1,106 @@
+# Lead Generator Configuration
+# ============================
+
+# Business types to search for - these are potential clients for:
+# websites, AI integration, automation, dashboards, CRMs
+
+business_types:
+  # Food & Hospitality - need online ordering, reservations
+  - restaurant
+  - cafe
+  - bar
+  - bakery
+  
+  # Beauty & Wellness - need booking systems
+  - beauty_salon
+  - hair_care
+  - spa
+  - nail_salon
+  
+  # Health & Fitness - need member management
+  - gym
+  - dentist
+  - doctor
+  - physiotherapist
+  - veterinary_care
+  
+  # Retail - need e-commerce, inventory
+  - store
+  - clothing_store
+  - shoe_store
+  - jewelry_store
+  - furniture_store
+  - electronics_store
+  
+  # Services - need client portals, scheduling
+  - real_estate_agency
+  - lawyer
+  - accounting
+  - insurance_agency
+  
+  # Automotive - need service scheduling
+  - car_repair
+  - car_dealer
+  - car_wash
+  
+  # Accommodation - need booking systems
+  - lodging
+  - hotel
+
+# Search presets for quick access
+presets:
+  lisbon_restaurants:
+    location: "Lisbon, Portugal"
+    radius: 10000
+    types:
+      - restaurant
+      - cafe
+      - bar
+    
+  porto_retail:
+    location: "Porto, Portugal"
+    radius: 8000
+    types:
+      - store
+      - clothing_store
+      - jewelry_store
+      
+  lisbon_wellness:
+    location: "Lisbon, Portugal"
+    radius: 10000
+    types:
+      - beauty_salon
+      - spa
+      - gym
+      - hair_care
+
+# Filter options
+filters:
+  # Minimum Google rating (1-5)
+  min_rating: 0
+  
+  # Only include businesses without websites (higher need for your services)
+  without_website_only: false
+  
+  # Minimum number of reviews (indicates established business)
+  min_reviews: 0
+
+# Export settings
+export:
+  # Default format: csv or xlsx
+  default_format: csv
+  
+  # Include these columns in export
+  columns:
+    - business_name
+    - address
+    - phone
+    - website
+    - email
+    - google_maps_url
+    - rating
+    - review_count
+    - business_type
+    - has_website
+    - place_id
+    - extracted_date
