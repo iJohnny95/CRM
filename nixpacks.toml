@@ -1,14 +1,12 @@
 # Nixpacks configuration for multi-language deployment (Node.js + Python)
 providers = ["node", "python"]
 
-[variables]
-NPM_CONFIG_PRODUCTION = "false"
+[phases.setup]
+nixPkgs = ["nodejs_20", "python311", "python311Packages.pip"]
 
 [phases.install]
-dependsOn = ["setup"]
 cmds = [
   "npm install",
-  "python3 -m pip install --upgrade pip",
   "python3 -m pip install -r requirements.txt"
 ]
 
