@@ -462,6 +462,8 @@ app.post('/api/send-email', async (req, res) => {
     }
 
     try {
+        console.log(`[Email] Attempting to send to ${to} via ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}`)
+
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
             port: parseInt(process.env.SMTP_PORT || '465'),
@@ -470,7 +472,24 @@ app.post('/api/send-email', async (req, res) => {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS,
             },
+            // Fail fast if connection hangs
+            connectionTimeout: 10000, // 10 seconds
+            greetingTimeout: 5000,
+            socketTimeout: 10000
         })
+
+        // Verify connection configuration
+        await new Promise((resolve, reject) => {
+            transporter.verify(function (error, success) {
+                if (error) {
+                    console.error('[Email] SMTP Connection Error:', error);
+                    reject(error);
+                } else {
+                    console.log('[Email] SMTP Connection Verified');
+                    resolve(success);
+                }
+            });
+        });
 
         const mailOptions = {
             from: `"Joao Vicente" <${process.env.SMTP_USER}>`,

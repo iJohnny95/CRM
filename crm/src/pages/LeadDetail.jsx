@@ -328,29 +328,42 @@ function LeadDetail() {
     if (!emailSubject.trim() || !emailBody.trim()) return
 
     setIsSendingEmail(true)
+    console.log('Starting email send...')
 
     try {
-      const response = await fetch('http://localhost:3001/api/send-email', {
+      const payload = {
+        to: lead.email,
+        subject: emailSubject,
+        body: emailBody,
+      }
+      console.log('Sending payload:', payload)
+      console.log('Target URL:', `${import.meta.env.VITE_BACKEND_URL}/api/send-email`)
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          to: lead.email,
-          subject: emailSubject,
-          body: emailBody,
-        }),
+        body: JSON.stringify(payload),
       })
+
+      console.log('Response status:', response.status)
 
       if (!response.ok) {
         const contentType = response.headers.get('content-type')
         if (contentType && contentType.includes('application/json')) {
           const errorData = await response.json()
+          console.error('Server error data:', errorData)
           throw new Error(errorData.error || 'Failed to send email')
         } else {
-          throw new Error(`Server returned error ${response.status}. Please make sure the backend server is running and restarted.`)
+          const text = await response.text()
+          console.error('Server error text:', text)
+          throw new Error(`Server returned error ${response.status}: ${text}`)
         }
       }
+
+      const data = await response.json()
+      console.log('Email sent successfully:', data)
 
       // Log in activity timeline
       logEmail(lead.id, `Subject: ${emailSubject}\n\n${emailBody}`)
@@ -367,6 +380,7 @@ function LeadDetail() {
     } catch (error) {
       console.error('Error sending email:', error)
       notify('Error', error.message, 'error')
+      // alert(`Failed to send email: ${error.message}`) // Optional: Uncomment if notify is broken
     } finally {
       setIsSendingEmail(false)
     }
@@ -993,8 +1007,8 @@ function LeadDetail() {
         </div>
       </div>
 
-      {/* Floating AI Chat Widget */}
-      <AiChatWidget lead={lead} updateLeadField={updateLeadField} />
+      {/* Floating AI Chat Widget - Admin only */}
+      {profile?.role === 'admin' && <AiChatWidget lead={lead} updateLeadField={updateLeadField} />}
 
       <style>{`
         .lead-detail-v2 {

@@ -27,15 +27,30 @@ import Papa from 'papaparse'
 import useStore from '../store/useStore'
 import { supabase } from '../lib/supabase'
 
-// Prioritize environment variable for Railway/Production, fallback to local IPv4 for Windows compatibility
-const envBackendUrl = import.meta.env.VITE_BACKEND_URL
-const localFallback = window.location.hostname === 'localhost' ? 'http://127.0.0.1:3001' : `http://${window.location.hostname}:3001`
-const API_BASE = envBackendUrl || localFallback
+// Use configured backend URL (Railway)
+const API_BASE = import.meta.env.VITE_BACKEND_URL
 const API_URL = `${API_BASE}/api`
 
 function Automations() {
   const navigate = useNavigate()
   const importLeads = useStore(state => state.importLeads)
+  const profile = useStore(state => state.profile)
+  const isAdmin = profile?.role === 'admin'
+
+  // Admin-only guard
+  if (!isAdmin) {
+    return (
+      <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+          <h3>Access Denied</h3>
+          <p style={{ color: 'var(--text-secondary)', marginTop: 8 }}>Only administrators can generate leads.</p>
+          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate('/')}>
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   // Form state
   const [location, setLocation] = useState('Almada, Portugal')

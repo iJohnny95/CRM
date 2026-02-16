@@ -254,7 +254,7 @@ function Leads() {
         }
       })
 
-      const res = await fetch('http://localhost:3001/api/fix-types', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/fix-types`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leads: selectedData })
