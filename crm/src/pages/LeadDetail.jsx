@@ -32,7 +32,8 @@ import {
   Bot,
   Send,
   Sparkles,
-  Search
+  Search,
+  Users
 } from 'lucide-react'
 import useStore, { STAGES, PRIORITIES, ACTIVITY_TYPES } from '../store/useStore'
 import { format, formatDistanceToNow } from 'date-fns'

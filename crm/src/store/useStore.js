@@ -59,6 +59,7 @@ const useStore = create((set, get) => ({
     filterHasPhone: 'all',
     filterHasEmail: 'all',
     filterNeedsAttention: false,
+    filterAgent: null,
     sortBy: 'created_at',
     sortOrder: 'desc',
 
@@ -134,7 +135,8 @@ const useStore = create((set, get) => ({
             set({ user }) // Set user immediately
 
             // Fetch profile if not present
-            if (!get().profile) {
+            let currentProfile = get().profile
+            if (!currentProfile) {
                 const { data: profile } = await supabase
                     .from('profiles')
                     .select('*')
@@ -143,6 +145,7 @@ const useStore = create((set, get) => ({
 
                 if (profile) {
                     set({ profile })
+                    currentProfile = profile
                 } else {
                     // Fallback create
                     const { data: newProfile } = await supabase
@@ -155,8 +158,16 @@ const useStore = create((set, get) => ({
                         }])
                         .select()
                         .single()
-                    if (newProfile) set({ profile: newProfile })
+                    if (newProfile) {
+                        set({ profile: newProfile })
+                        currentProfile = newProfile
+                    }
                 }
+            }
+
+            // Now fetch initial data if not already loaded
+            if (!get().initialized && currentProfile) {
+                get().fetchInitialData()
             }
         })
 
@@ -173,8 +184,14 @@ const useStore = create((set, get) => ({
             const isAdmin = profile?.role === 'admin'
 
             // Fetch leads, events, and scripts concurrently
+            // Non-admins only see leads assigned to them
+            let leadsQuery = supabase.from('leads').select('*, activities(*), notes(*), files(*)')
+            if (!isAdmin) {
+                leadsQuery = leadsQuery.eq('user_id', user.id)
+            }
+
             const [leadsRes, eventsRes, scriptsRes] = await Promise.all([
-                supabase.from('leads').select('*, activities(*), notes(*), files(*)'),
+                leadsQuery,
                 supabase.from('events').select('*'),
                 supabase.from('scripts').select('*, script_steps(*)')
             ])
@@ -311,6 +328,7 @@ const useStore = create((set, get) => ({
     setFilterHasPhone: (status) => set({ filterHasPhone: status }),
     setFilterHasEmail: (status) => set({ filterHasEmail: status }),
     setFilterNeedsAttention: (status) => set({ filterNeedsAttention: status }),
+    setFilterAgent: (agentId) => set({ filterAgent: agentId }),
     setSortBy: (field) => set({ sortBy: field }),
     setSortOrder: (order) => set({ sortOrder: order }),
 
@@ -352,6 +370,7 @@ const useStore = create((set, get) => ({
 
         const lead = {
             user_id: user.id,
+            created_by: user.id,
             ...leadData,
             business_name: leadData.business_name || '',
             address: leadData.address || '',
@@ -437,6 +456,7 @@ const useStore = create((set, get) => ({
 
             newLeads.push({
                 user_id: user.id,
+                created_by: user.id,
                 business_name: leadData.business_name || '',
                 address: leadData.address || '',
                 phone: leadData.phone || '',
@@ -838,6 +858,12 @@ const useStore = create((set, get) => ({
         } = get()
 
         let filtered = [...leads]
+
+        // Apply agent filter (from Team page)
+        const filterAgent = get().filterAgent
+        if (filterAgent) {
+            filtered = filtered.filter(lead => lead.user_id === filterAgent)
+        }
 
         // Apply search filter
         if (searchQuery) {

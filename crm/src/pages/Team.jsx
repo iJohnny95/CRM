@@ -5,6 +5,7 @@ import useStore from '../store/useStore'
 function Team() {
     const profile = useStore(state => state.profile)
     const users = useStore(state => state.users)
+    const leads = useStore(state => state.leads)
     const navigate = useNavigate()
 
     // Redirect if not admin
@@ -23,6 +24,9 @@ function Team() {
         )
     }
 
+    // Count leads per user
+    const getLeadCount = (userId) => leads.filter(l => l.user_id === userId).length
+
     return (
         <div className="page team-page animate-fade-in">
             <header className="page-header">
@@ -33,34 +37,41 @@ function Team() {
             </header>
 
             <div className="team-grid">
-                {users.map(user => (
-                    <div key={user.id} className="card user-card">
-                        <div className="user-header">
-                            <div className="user-avatar">
-                                {user.full_name?.charAt(0) || user.email?.charAt(0) || '?'}
-                            </div>
-                            <div className="user-info">
-                                <h3>{user.full_name || 'Unnamed User'}</h3>
-                                <div className="user-email">
-                                    <Mail size={14} />
-                                    <span>{user.email}</span>
+                {users.map(user => {
+                    const leadCount = getLeadCount(user.id)
+                    return (
+                        <div key={user.id} className="card user-card">
+                            <div className="user-header">
+                                <div className="user-avatar">
+                                    {user.full_name?.charAt(0) || user.email?.charAt(0) || '?'}
+                                </div>
+                                <div className="user-info">
+                                    <h3>{user.full_name || 'Unnamed User'}</h3>
+                                    <div className="user-email">
+                                        <Mail size={14} />
+                                        <span>{user.email}</span>
+                                    </div>
+                                </div>
+                                <div className={`role-badge ${user.role}`}>
+                                    {user.role === 'admin' ? <Shield size={12} /> : <Users size={12} />}
+                                    {user.role}
                                 </div>
                             </div>
-                            <div className={`role-badge ${user.role}`}>
-                                {user.role === 'admin' ? <Shield size={12} /> : <Users size={12} />}
-                                {user.role}
+
+                            <div className="user-stats" style={{ display: 'flex', gap: '12px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                <span>{leadCount} lead{leadCount !== 1 ? 's' : ''} assigned</span>
+                            </div>
+
+                            <div className="user-footer">
+                                <span className="user-id">ID: {user.id.slice(0, 8)}...</span>
+                                <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/leads?agent=${user.id}`)}>
+                                    View Leads
+                                    <ArrowRight size={14} />
+                                </button>
                             </div>
                         </div>
-
-                        <div className="user-footer">
-                            <span className="user-id">ID: {user.id.slice(0, 8)}...</span>
-                            <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/leads?agent=${user.id}`)}>
-                                View Leads
-                                <ArrowRight size={14} />
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                    )
+                })}
             </div>
 
             <style>{`

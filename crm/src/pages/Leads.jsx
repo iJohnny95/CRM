@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Search,
   ExternalLink,
@@ -32,6 +32,8 @@ import Papa from 'papaparse'
 
 function Leads() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const leads = useStore(state => state.getFilteredLeads())
   const searchQuery = useStore(state => state.searchQuery)
   const setSearchQuery = useStore(state => state.setSearchQuery)
@@ -46,6 +48,9 @@ function Leads() {
   const deleteLeads = useStore(state => state.deleteLeads)
   const updateLead = useStore(state => state.updateLead)
   const allLeads = useStore(state => state.leads)
+  const users = useStore(state => state.users)
+  const setFilterAgent = useStore(state => state.setFilterAgent)
+  const filterAgent = useStore(state => state.filterAgent)
 
   // Filter states from store
   const filterPriority = useStore(state => state.filterPriority)
@@ -66,6 +71,13 @@ function Leads() {
   const setFilterHasEmail = useStore(state => state.setFilterHasEmail)
   const filterNeedsAttention = useStore(state => state.filterNeedsAttention)
   const setFilterNeedsAttention = useStore(state => state.setFilterNeedsAttention)
+
+  // Handle agent filter from URL (?agent=userId from Team page)
+  useEffect(() => {
+    const agentId = searchParams.get('agent')
+    setFilterAgent(agentId || null)
+    return () => setFilterAgent(null) // Clear on unmount
+  }, [searchParams])
 
   // Handle incoming filters from location state
   useEffect(() => {
@@ -313,8 +325,26 @@ function Leads() {
     setShowNewLeadModal(false)
   }
 
+  const agentUser = filterAgent ? users.find(u => u.id === filterAgent) : null
+
   return (
     <div className="page leads-page">
+      {agentUser && (
+        <div className="agent-filter-banner" style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px', marginBottom: '16px', borderRadius: '8px',
+          background: 'var(--accent-subtle)', border: '1px solid var(--accent)',
+          color: 'var(--accent)', fontSize: '14px', fontWeight: 500
+        }}>
+          <span>
+            <User size={14} style={{ marginRight: 6, verticalAlign: -2 }} />
+            Viewing leads assigned to: <strong>{agentUser.full_name || agentUser.email}</strong>
+          </span>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/leads')} style={{ color: 'var(--accent)' }}>
+            <X size={14} /> Clear Filter
+          </button>
+        </div>
+      )}
       <header className="page-header">
         <div>
           <h1>Leads</h1>
