@@ -20,7 +20,6 @@ import useThemeStore from '../store/useThemeStore'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/automations', icon: Zap, label: 'Generate Leads' },
   { to: '/calendar', icon: Calendar, label: 'Calendar' },
   { to: '/leads', icon: Users, label: 'Leads' },
   { to: '/pipeline', icon: GitBranch, label: 'Pipeline' },
@@ -28,6 +27,10 @@ const navItems = [
   { to: '/clients', icon: Handshake, label: 'Clients' },
   { to: '/analytics', icon: TrendingUp, label: 'Analytics' },
   { to: '/activity', icon: Activity, label: 'Activity' },
+]
+
+const adminNavItems = [
+  { to: '/automations', icon: Zap, label: 'Generate Leads' },
 ]
 
 function Sidebar() {
@@ -63,6 +66,16 @@ function Sidebar() {
 
       <nav className="sidebar-nav">
         {navItems.map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            <Icon size={18} />
+            <span>{label}</span>
+          </NavLink>
+        ))}
+        {isAdmin && adminNavItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}

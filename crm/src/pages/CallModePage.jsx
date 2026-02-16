@@ -132,8 +132,6 @@ export default function CallModePage() {
         }
     }, [activeScriptId, scripts, setActiveScript])
 
-    if (!lead) return <div className="page">Lead not found</div>
-
     const activeScript = scripts.find(s => s.id === activeScriptId) || scripts[0]
 
     // Initialize edit state when switching scripts
@@ -142,6 +140,8 @@ export default function CallModePage() {
             setEditedScript(JSON.parse(JSON.stringify(activeScript)))
         }
     }, [activeScript])
+
+    if (!lead) return <div className="page">Lead not found</div>
 
     // Format timer
     const formatTime = (seconds) => {

@@ -4,7 +4,6 @@ import { spawn } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
-import nodemailer from 'nodemailer'
 import dotenv from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
 
@@ -453,69 +452,43 @@ if __name__ == "__main__":
     })
 })
 
-// Send email automation
+import { Resend } from 'resend'
+
+// ... (existing code)
+
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY)
+
 app.post('/api/send-email', async (req, res) => {
     const { to, subject, body } = req.body
 
     if (!to || !subject || !body) {
-        return res.status(400).json({ error: 'Missing required fields: to, subject, or body' })
+        return res.status(400).json({ error: 'Missing required fields' })
     }
 
     try {
-        console.log(`[Email] Attempting to send to ${to} via ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}`)
+        console.log(`[Email] Attempting to send to ${to} via Resend API`)
 
-        const port = parseInt(process.env.SMTP_PORT || '465')
-        const isSecure = port === 465 // True for 465, false for 587 (STARTTLS)
-
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: port,
-            secure: isSecure,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-            // Removed family: 4 to allow IPv6 if available
-            tls: {
-                rejectUnauthorized: false // DEBUG: Bypass strict SSL checks to rule out handshake hangs
-            },
-            // Debugging
-            debug: true,
-            logger: true,
-            // Extended Timeouts
-            connectionTimeout: 30000,
-            greetingTimeout: 30000,
-            socketTimeout: 30000
+        const { data, error } = await resend.emails.send({
+            from: 'João Vicente <info@joao-vicente.dev>',
+            to: [to],
+            // bcc: 'info@joao-vicente.dev', // Optional: verify if you want a copy
+            subject: subject,
+            html: body.replace(/\n/g, '<br>'), // Convert newlines to HTML breaks since Resend sends HTML by default
+            text: body // Fallback plain text
         })
 
-        // Verify connection configuration
-        await new Promise((resolve, reject) => {
-            transporter.verify(function (error, success) {
-                if (error) {
-                    console.error('[Email] SMTP Connection Error:', error);
-                    reject(error);
-                } else {
-                    console.log('[Email] SMTP Connection Verified');
-                    resolve(success);
-                }
-            });
-        });
-
-        const mailOptions = {
-            from: `"Joao Vicente" <${process.env.SMTP_USER}>`,
-            to,
-            subject,
-            text: body,
-            html: body.replace(/\n/g, '<br>'), // Simple text to html conversion
+        if (error) {
+            console.error('[Email] Resend Error:', error)
+            return res.status(500).json({ error: 'Failed to send email', details: error.message })
         }
 
-        const info = await transporter.sendMail(mailOptions)
-        console.log('Email sent: %s', info.messageId)
+        console.log(`[Email] Sent successfully! ID: ${data.id}`)
+        res.status(200).json({ message: 'Email sent successfully', id: data.id })
 
-        res.json({ message: 'Email sent successfully', messageId: info.messageId })
     } catch (error) {
-        console.error('Error sending email:', error)
-        res.status(500).json({ error: 'Failed to send email', details: error.message })
+        console.error('[Email] Unexpected Error:', error)
+        res.status(500).json({ error: 'Internal Server Error', details: error.message })
     }
 })
 

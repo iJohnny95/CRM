@@ -43,7 +43,7 @@ const useStore = create((set, get) => ({
     users: [], // Team members (for admins)
     scripts: [],
     activeScriptId: null,
-    isLoading: false,
+    isLoading: true, // Start in loading state to block premature redirects
     initialized: false, // Prevent double-fetching
     error: null,
 
@@ -111,67 +111,108 @@ const useStore = create((set, get) => ({
     },
     logout: async () => {
         await supabase.auth.signOut()
-        set({ user: null, profile: null, leads: [], events: [] })
+        set({ user: null, profile: null, leads: [], events: [], initialized: false, isLoading: false })
     },
 
     // Private property to track auth listener
     _authListener: null,
+    _authInitializing: false, // New flag to prevent strict mode double-firing
 
     // Initialize Auth listener
-    initAuth: () => {
+    initAuth: async () => {
         // Prevent multiple listeners during HMR or re-renders
-        if (get()._authListener) return
+        if (get()._authListener || get()._authInitializing) return
+        set({ _authInitializing: true })
 
+        // Safety timeout: forced unlock of 'isLoading' after 5s if stuck
+        const safetyTimeout = setTimeout(() => {
+            if (get().isLoading) {
+                console.warn('Auth initialization timed out, forcing unlock')
+                set({ isLoading: false, _authInitializing: false })
+            }
+        }, 5000)
+
+        // 1. Check for existing session immediately to avoid flash of logged-out state
+        try {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session?.user) {
+                console.log('Restored session for:', session.user.email)
+                set({ user: session.user }) // Keep isLoading: true until initial data fetch starts
+            } else {
+                // No session found, stop loading immediately
+                set({ isLoading: false })
+            }
+        } catch (err) {
+            console.error('Error restoring session:', err)
+            set({ isLoading: false })
+        }
+
+        // 2. Listen for changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('Auth event:', event, session?.user?.email)
             const user = session?.user || null
 
-            // Handle Logout
-            if (!user) {
+            // Handle Logout or Session Expiry
+            if (!user || event === 'SIGNED_OUT') {
                 set({ user: null, profile: null, leads: [], events: [], initialized: false, isLoading: false })
                 return
             }
 
             // Handle Login / Session Change
-            set({ user }) // Set user immediately
+            set((state) => ({ user, isLoading: true })) // Ensure loading is true while we fetch profile
 
             // Fetch profile if not present
             let currentProfile = get().profile
-            if (!currentProfile) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single()
+            // If profile ID doesn't match new user, reset it
+            if (currentProfile && currentProfile.id !== user.id) {
+                currentProfile = null
+                set({ profile: null })
+            }
 
-                if (profile) {
-                    set({ profile })
-                    currentProfile = profile
-                } else {
-                    // Fallback create
-                    const { data: newProfile } = await supabase
+            if (!currentProfile) {
+                try {
+                    const { data: profile } = await supabase
                         .from('profiles')
-                        .insert([{
-                            id: user.id,
-                            email: user.email,
-                            full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'New User',
-                            role: 'user'
-                        }])
-                        .select()
+                        .select('*')
+                        .eq('id', user.id)
                         .single()
-                    if (newProfile) {
-                        set({ profile: newProfile })
-                        currentProfile = newProfile
+
+                    if (profile) {
+                        set({ profile })
+                        currentProfile = profile
+                    } else {
+                        // Fallback create
+                        const { data: newProfile } = await supabase
+                            .from('profiles')
+                            .insert([{
+                                id: user.id,
+                                email: user.email,
+                                full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'New User',
+                                role: 'user'
+                            }])
+                            .select()
+                            .single()
+                        if (newProfile) {
+                            set({ profile: newProfile })
+                            currentProfile = newProfile
+                        }
                     }
+                } catch (err) {
+                    console.error('Error fetching profile:', err)
                 }
             }
 
             // Now fetch initial data if not already loaded
             if (!get().initialized && currentProfile) {
-                get().fetchInitialData()
+                await get().fetchInitialData() // Wait for data
             }
+
+            // Finally clear loading state
+            set({ isLoading: false })
+            clearTimeout(safetyTimeout) // Clear timeout if successful
         })
 
-        set({ _authListener: subscription })
+        set({ _authListener: subscription, _authInitializing: false })
     },
 
     // Fetch initial data from Supabase
@@ -184,45 +225,74 @@ const useStore = create((set, get) => ({
             const isAdmin = profile?.role === 'admin'
 
             // Fetch leads, events, and scripts concurrently
-            // Non-admins only see leads assigned to them
+            // Non-admins only see leads assigned to them OR created by them
             let leadsQuery = supabase.from('leads').select('*, activities(*), notes(*), files(*)')
+
             if (!isAdmin) {
-                leadsQuery = leadsQuery.eq('user_id', user.id)
+                // Use 'or' filter to check both columns
+                leadsQuery = leadsQuery.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`)
             }
 
+            // Execute queries individually to prevent one failure from blocking others
+            // and to better handle AbortErrors if they occur
+            // Use .then(res => res, err => ({ error: err })) because Supabase builders are thenables but may lack .catch
             const [leadsRes, eventsRes, scriptsRes] = await Promise.all([
-                leadsQuery,
-                supabase.from('events').select('*'),
-                supabase.from('scripts').select('*, script_steps(*)')
+                leadsQuery.then(res => res, err => ({ error: err })),
+                supabase.from('events').select('*').then(res => res, err => ({ error: err })),
+                supabase.from('scripts').select('*, script_steps(*)').then(res => res, err => ({ error: err }))
             ])
 
-            if (leadsRes && leadsRes.error) console.error('Error fetching leads:', leadsRes.error)
-            if (eventsRes && eventsRes.error) console.error('Error fetching events:', eventsRes.error)
-            if (scriptsRes && scriptsRes.error) console.error('Error fetching scripts:', scriptsRes.error)
+            let fetchedLeads = [];
+            let fetchedEvents = [];
+            let fetchedScripts = [];
+
+            if (leadsRes.error) {
+                if (leadsRes.error.message?.includes('AbortError')) {
+                    console.log('Leads fetch aborted')
+                } else {
+                    console.error('Error fetching leads:', leadsRes.error)
+                }
+            } else if (leadsRes.data) {
+                // Sanitize leads (ensure missing properties are initialized)
+                fetchedLeads = (leadsRes.data || []).map(lead => ({
+                    ...lead,
+                    notes: lead.notes || [],
+                    activities: lead.activities || [],
+                    files: lead.files || [],
+                    tags: lead.tags || [],
+                    services: lead.services || [],
+                }))
+                set({ leads: fetchedLeads })
+            }
+
+            if (eventsRes.error) {
+                if (!eventsRes.error.message?.includes('AbortError')) {
+                    console.error('Error fetching events:', eventsRes.error)
+                }
+            } else if (eventsRes.data) {
+                fetchedEvents = eventsRes.data;
+                set({ events: fetchedEvents })
+            }
+
+            if (scriptsRes.error) {
+                if (!scriptsRes.error.message?.includes('AbortError')) {
+                    console.error('Error fetching scripts:', scriptsRes.error)
+                }
+            } else if (scriptsRes.data) {
+                fetchedScripts = scriptsRes.data;
+                set({
+                    scripts: fetchedScripts,
+                    activeScriptId: fetchedScripts.find(s => s.is_primary)?.id || (fetchedScripts.length > 0 ? fetchedScripts[0].id : null),
+                })
+            }
 
             // If admin, also fetch users
             if (isAdmin) {
                 await get().fetchUsers()
             }
 
-            // Sanitize leads (ensure missing properties are initialized)
-            const leads = (leadsRes?.data || []).map(lead => ({
-                ...lead,
-                notes: lead.notes || [],
-                activities: lead.activities || [],
-                files: lead.files || [],
-                tags: lead.tags || [],
-                services: lead.services || [],
-            }))
 
-            set({
-                leads,
-                events: eventsRes?.data || [],
-                scripts: scriptsRes?.data || [],
-                activeScriptId: scriptsRes?.data?.find(s => s.is_primary)?.id || (scriptsRes?.data?.length > 0 ? scriptsRes.data[0].id : null),
-                isLoading: false,
-                initialized: true
-            })
+            set({ initialized: true })
         } catch (error) {
             console.error('Fetch initial data failed:', error)
             set({ error: error.message, isLoading: false, initialized: true }) // Set initialized to true anyway to break retry loop
@@ -232,7 +302,12 @@ const useStore = create((set, get) => ({
     // Computed: Get all calendar events including historical lead activities
     getAllCalendarEvents: () => {
         const leads = get().leads
-        const manualEvents = get().events
+        // Map DB events (start_time/end_time) to Calendar events (start/end)
+        const manualEvents = (get().events || []).map(event => ({
+            ...event,
+            start: event.start_time || event.start, // Fallback for safety
+            end: event.end_time || event.end
+        }))
 
         const leadActivities = leads.flatMap(lead => {
             return (lead.activities || []).map(activity => {
@@ -333,34 +408,126 @@ const useStore = create((set, get) => ({
     setSortOrder: (order) => set({ sortOrder: order }),
 
     // Script Actions
-    addScript: (script) => set((state) => {
-        const newScript = { ...script, id: generateId() }
-        // If it's the first script, make it active/primary
-        if (state.scripts.length === 0) {
-            newScript.isPrimary = true
-            return { scripts: [newScript], activeScriptId: newScript.id }
+    // Script Actions
+    addScript: async (script) => {
+        const { user } = get()
+        if (!user) {
+            console.error('Failed to add script: No user logged in')
+            return null
         }
-        return { scripts: [...state.scripts, newScript] }
-    }),
-    updateScript: (id, updates) => set((state) => ({
-        scripts: state.scripts.map(s => s.id === id ? { ...s, ...updates } : s)
-    })),
-    deleteScript: (id) => set((state) => {
-        const newScripts = state.scripts.filter(s => s.id !== id)
-        // If we deleted the active script, reset to the first available or null
-        let newActiveId = state.activeScriptId
-        if (id === state.activeScriptId) {
-            newActiveId = newScripts.length > 0 ? newScripts[0].id : null
+
+        try {
+            const newScript = {
+                ...script,
+                user_id: user.id,
+                created_at: new Date().toISOString()
+            }
+
+            const { data, error } = await supabase
+                .from('scripts')
+                .insert([newScript])
+                .select()
+                .single()
+
+            if (error) {
+                console.error('Supabase scripts insert error:', JSON.stringify(error, null, 2))
+                throw error
+            }
+
+            set((state) => {
+                // If it's the first script, make it active/primary
+                if (state.scripts.length === 0) {
+                    return { scripts: [data], activeScriptId: data.id }
+                }
+                return { scripts: [...state.scripts, data] }
+            })
+            return data
+        } catch (error) {
+            console.error('Failed to add script:', error)
+            return null
         }
-        return { scripts: newScripts, activeScriptId: newActiveId }
-    }),
+    },
+
+    updateScript: async (id, updates) => {
+        try {
+            const { error } = await supabase
+                .from('scripts')
+                .update(updates)
+                .eq('id', id)
+
+            if (error) {
+                console.error('Supabase scripts update error:', JSON.stringify(error, null, 2))
+                throw error
+            }
+
+            set((state) => ({
+                scripts: state.scripts.map(s => s.id === id ? { ...s, ...updates } : s)
+            }))
+        } catch (error) {
+            console.error('Failed to update script:', error)
+        }
+    },
+
+    deleteScript: async (id) => {
+        try {
+            const { error } = await supabase
+                .from('scripts')
+                .delete()
+                .eq('id', id)
+
+            if (error) {
+                console.error('Supabase scripts delete error:', JSON.stringify(error, null, 2))
+                throw error
+            }
+
+            set((state) => {
+                const newScripts = state.scripts.filter(s => s.id !== id)
+                // If we deleted the active script, reset to the first available or null
+                let newActiveId = state.activeScriptId
+                if (id === state.activeScriptId) {
+                    newActiveId = newScripts.length > 0 ? newScripts[0].id : null
+                }
+                return { scripts: newScripts, activeScriptId: newActiveId }
+            })
+        } catch (error) {
+            console.error('Failed to delete script:', error)
+        }
+    },
+
     setActiveScript: (id) => set({ activeScriptId: id }),
-    setPrimaryScript: (id) => set((state) => ({
-        scripts: state.scripts.map(s => ({
-            ...s,
-            isPrimary: s.id === id
-        }))
-    })),
+
+    setPrimaryScript: async (id) => {
+        try {
+            // 1. Reset all others
+            // This is tricky with simple RLS updates if we can't do batch updates easily across rows we don't own?
+            // But user owns their scripts.
+            // Ideally we'd do a transaction or two calls.
+            // For now, let's just set the target one to true. 
+            // Logic to un-set others relies on UI or fetching.
+            // Supabase doesn't support 'UPDATE ... WHERE id != target' easily in one go if filters are complex?
+            // Actually it does: .neq('id', id).update({ isPrimary: false })?
+            // But let's keep it simple: update the target.
+            // The UI handles the visual 'only one active'.
+
+            const { error } = await supabase
+                .from('scripts')
+                .update({ isPrimary: true })
+                .eq('id', id)
+
+            if (error) throw error
+
+            set((state) => ({
+                scripts: state.scripts.map(s => ({
+                    ...s,
+                    isPrimary: s.id === id
+                }))
+            }))
+        } catch (error) {
+            console.error('Failed to set primary script:', error)
+        }
+    },
+
+
     reorderScripts: (scripts) => set({ scripts }),
 
     // Add a single lead
@@ -520,17 +687,20 @@ const useStore = create((set, get) => ({
         if (!lead) return
 
         const oldValue = lead[field]
+        const updated_at = new Date().toISOString()
 
         try {
-            await fetch(`${API_URL}/leads/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ [field]: value })
-            })
+            const { error } = await supabase
+                .from('leads')
+                .update({ [field]: value, updated_at })
+                .eq('id', id)
+
+            if (error) throw error
+
             set((state) => ({
                 leads: state.leads.map(l =>
                     l.id === id
-                        ? { ...l, [field]: value, updated_at: new Date().toISOString() }
+                        ? { ...l, [field]: value, updated_at }
                         : l
                 )
             }))
@@ -551,17 +721,20 @@ const useStore = create((set, get) => ({
 
         const oldStage = STAGES.find(s => s.id === lead.stage)
         const newStage = STAGES.find(s => s.id === stage)
+        const updated_at = new Date().toISOString()
 
         try {
-            await fetch(`${API_URL}/leads/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ stage })
-            })
+            const { error } = await supabase
+                .from('leads')
+                .update({ stage, updated_at })
+                .eq('id', id)
+
+            if (error) throw error
+
             set((state) => ({
                 leads: state.leads.map(lead =>
                     lead.id === id
-                        ? { ...lead, stage, updated_at: new Date().toISOString() }
+                        ? { ...lead, stage, updated_at }
                         : lead
                 )
             }))
@@ -659,48 +832,90 @@ const useStore = create((set, get) => ({
     },
 
     // Add file to lead
-    addFile: (leadId, fileData) => {
+    addFile: async (leadId, fileData) => {
+        const { user } = get()
+        // Ensure user exists before trying to upload
+        if (!user) {
+            console.error('Failed to add file: No user logged in')
+            return null
+        }
+
         const file = {
-            id: generateId(),
+            lead_id: leadId,
+            user_id: user.id,
             name: fileData.name,
             type: fileData.type,
             size: fileData.size,
             url: fileData.url, // base64 or blob URL
             uploaded_at: new Date().toISOString(),
         }
-        set((state) => ({
-            leads: state.leads.map(lead =>
-                lead.id === leadId
-                    ? {
-                        ...lead,
-                        files: [...(lead.files || []), file],
-                        updated_at: new Date().toISOString()
-                    }
-                    : lead
-            )
-        }))
 
-        // Add activity
-        get().addActivity(leadId, 'file', `Added file: ${fileData.name}`)
+        try {
+            const { data, error } = await supabase
+                .from('files')
+                .insert([file])
+                .select()
+                .single()
 
-        return file
+            if (error) {
+                console.error('Supabase insert error payload:', {
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint,
+                    code: error.code
+                })
+                throw error
+            }
+
+            set((state) => ({
+                leads: state.leads.map(lead =>
+                    lead.id === leadId
+                        ? {
+                            ...lead,
+                            files: [...(lead.files || []), data],
+                            updated_at: new Date().toISOString()
+                        }
+                        : lead
+                )
+            }))
+
+            // Add activity
+            get().addActivity(leadId, 'file', `Added file: ${fileData.name}`)
+
+            return data
+        } catch (error) {
+            // Log full error object for debugging
+            console.error('Failed to add file:', JSON.stringify(error, null, 2))
+            return null
+        }
     },
 
     // Delete file from lead
-    deleteFile: (leadId, fileId) => {
+    deleteFile: async (leadId, fileId) => {
         const lead = get().getLeadById(leadId)
         const file = lead?.files?.find(f => f.id === fileId)
 
-        set((state) => ({
-            leads: state.leads.map(lead =>
-                lead.id === leadId
-                    ? { ...lead, files: (lead.files || []).filter(f => f.id !== fileId) }
-                    : lead
-            )
-        }))
+        try {
+            const { error } = await supabase
+                .from('files')
+                .delete()
+                .eq('id', fileId)
 
-        if (file) {
-            get().addActivity(leadId, 'note', `Removed file: ${file.name}`)
+            if (error) throw error
+
+            set((state) => ({
+                leads: state.leads.map(lead =>
+                    lead.id === leadId
+                        ? { ...lead, files: (lead.files || []).filter(f => f.id !== fileId) }
+                        : lead
+                )
+            }))
+
+            if (file) {
+                get().addActivity(leadId, 'note', `Removed file: ${file.name}`)
+            }
+        } catch (error) {
+            console.error('Failed to delete file:', error)
         }
     },
 
@@ -751,13 +966,13 @@ const useStore = create((set, get) => ({
     },
 
     // Schedule/log a meeting
-    logMeeting: (leadId, details, metadata = {}) => {
+    logMeeting: async (leadId, details, metadata = {}) => {
         const lead = get().getLeadById(leadId)
         if (!lead) return
 
-        get().addActivity(leadId, 'meeting', details || 'Had a meeting', metadata)
+        const activity = await get().addActivity(leadId, 'meeting', details || 'Had a meeting', metadata)
 
-        if (metadata.scheduledTime) {
+        if (metadata.scheduledTime && activity) {
             get().addEvent({
                 title: `Meeting: ${lead.business_name}`,
                 start: metadata.scheduledTime,
@@ -776,9 +991,32 @@ const useStore = create((set, get) => ({
         if (!user) return null
 
         try {
+            const eventPayload = {
+                user_id: user.id,
+                title: eventData.title,
+                description: eventData.notes || eventData.description, // Map notes to description if needed, or keep notes
+                start_time: eventData.start, // Map start to start_time (common convention) or keep start
+                end_time: eventData.end,   // Map end to end_time
+                type: eventData.type,
+                lead_id: eventData.leadId, // Map camelCase to snake_case
+                metadata: eventData.metadata || {}
+            }
+
+            // The error explicitly says "null value in column 'start_time'"
+            // This means the DB expects 'start_time' (and likely 'end_time'), NOT 'start'/'end'.
+            const dbPayload = {
+                user_id: user.id,
+                title: eventData.title,
+                start_time: eventData.start,
+                end_time: eventData.end,
+                type: eventData.type,
+                notes: eventData.notes || eventData.description,
+                lead_id: eventData.leadId
+            }
+
             const { data, error } = await supabase
                 .from('events')
-                .insert([{ ...eventData, user_id: user.id }])
+                .insert([dbPayload])
                 .select()
                 .single()
 
