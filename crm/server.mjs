@@ -464,18 +464,24 @@ app.post('/api/send-email', async (req, res) => {
     try {
         console.log(`[Email] Attempting to send to ${to} via ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}`)
 
+        const port = parseInt(process.env.SMTP_PORT || '465')
+        const isSecure = port === 465 // True for 465, false for 587 (STARTTLS)
+
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || '465'),
-            secure: true, // true for 465, false for other ports
+            port: port,
+            secure: isSecure,
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS,
             },
             // Force IPv4
             family: 4,
+            // Debugging
+            debug: true,
+            logger: true,
             // Fail fast if connection hangs
-            connectionTimeout: 10000, // 10 seconds
+            connectionTimeout: 10000,
             greetingTimeout: 5000,
             socketTimeout: 10000
         })
