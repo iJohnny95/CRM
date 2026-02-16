@@ -477,7 +477,6 @@ app.post('/api/send-email', async (req, res) => {
             },
             // Removed family: 4 to allow IPv6 if available
             tls: {
-                ciphers: 'SSLv3',      // Legacy support
                 rejectUnauthorized: false // DEBUG: Bypass strict SSL checks to rule out handshake hangs
             },
             // Debugging
