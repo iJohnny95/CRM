@@ -4,8 +4,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "start": "node crm/server.mjs",
-        "postinstall": "pip install -r requirements.txt"
+        "start": "node crm/server.mjs"
     },
     "dependencies": {
         "express": "^4.18.2",
