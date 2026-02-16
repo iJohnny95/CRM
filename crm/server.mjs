@@ -35,6 +35,11 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+// Health check for Railway deployment
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
 // Authentication Middleware
 const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization
