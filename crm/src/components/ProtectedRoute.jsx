@@ -7,6 +7,13 @@ function ProtectedRoute() {
     const profile = useStore(state => state.profile)
     const isLoading = useStore(state => state.isLoading)
 
+    // DEBUG LOG
+    if (user) {
+        console.log('--- ProtectedRoute Debug ---');
+        console.log('User Metadata:', user.user_metadata);
+        console.log('Needs PW Change:', user.user_metadata?.needs_password_change);
+    }
+
     // Wait for auth to initialize (initAuth handles the user/profile state)
     // We only block if we have neither user nor we are still loading profile
     if (!user && (isLoading || profile === undefined)) {
