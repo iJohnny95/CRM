@@ -20,6 +20,12 @@ function ProtectedRoute() {
         )
     }
 
+    // If we have a user but NO profile (and we finished loading), it means the user was likely deleted
+    // from the profiles table. We should treat them as logged-out.
+    if (user && !profile && !isLoading) {
+        return <Navigate to="/login" replace />
+    }
+
     if (!user) {
         return <Navigate to="/login" replace />
     }

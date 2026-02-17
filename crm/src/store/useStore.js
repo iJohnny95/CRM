@@ -180,22 +180,33 @@ const useStore = create((set, get) => ({
                     if (profile) {
                         set({ profile })
                         currentProfile = profile
-                    } else {
+                    } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                        // This is a NEW user or we somehow missed the profile trigger
                         // Fallback create
-                        const { data: newProfile } = await supabase
+                        const { data: newProfile, error: insertError } = await supabase
                             .from('profiles')
                             .insert([{
                                 id: user.id,
                                 email: user.email,
                                 full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'New User',
-                                role: 'user'
+                                role: 'user',
+                                needs_pw_change: true
                             }])
                             .select()
                             .single()
+
                         if (newProfile) {
                             set({ profile: newProfile })
                             currentProfile = newProfile
+                        } else {
+                            console.error('Failed to create fallback profile:', insertError)
                         }
+                    } else {
+                        // Profile is missing and it's not a fresh signup/login where we expect a trigger
+                        // This usually means the user was DELETED from the database
+                        console.warn('Profile not found, logging out...')
+                        get().logout()
+                        return
                     }
                 } catch (err) {
                     console.error('Error fetching profile:', err)
@@ -227,7 +238,12 @@ const useStore = create((set, get) => ({
                 .eq('id', user.id)
                 .single()
 
-            if (error) throw error
+            if (error || !profile) {
+                console.warn('Profile not found during refresh, logging out...')
+                get().logout()
+                return
+            }
+
             if (profile) {
                 set({ profile })
             }
