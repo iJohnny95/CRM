@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Reorder } from 'framer-motion'
+import { Reorder, useDragControls } from 'framer-motion'
 import {
   LayoutDashboard,
   Users,
@@ -35,6 +35,35 @@ const ALL_NAV_ITEMS = [
   { id: 'settings', to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
+function SidebarItem({ item, dragControls }) {
+  return (
+    <Reorder.Item
+      value={item}
+      id={item.id}
+      dragListener={false}
+      dragControls={dragControls}
+      className="reorder-item-wrapper"
+    >
+      <NavLink
+        to={item.to}
+        draggable="false"
+        className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+      >
+        <div className="nav-item-content">
+          <item.icon size={18} />
+          <span>{item.label}</span>
+        </div>
+        <div
+          className="drag-handle"
+          onPointerDown={(e) => dragControls.start(e)}
+        >
+          <GripVertical size={14} />
+        </div>
+      </NavLink>
+    </Reorder.Item>
+  )
+}
+
 function Sidebar() {
   const profile = useStore(state => state.profile)
   const user = useStore(state => state.user)
@@ -43,6 +72,7 @@ function Sidebar() {
   const theme = useThemeStore(state => state.theme)
   const toggleTheme = useThemeStore(state => state.toggleTheme)
   const initTheme = useThemeStore(state => state.initTheme)
+  const dragControls = useDragControls()
 
   // Manage Nav Order State
   const [items, setItems] = useState([])
@@ -74,7 +104,7 @@ function Sidebar() {
     setItems(sortedItems)
   }, [profile, isAdmin])
 
-  // Save order when it changes (debounced-ish via the effect trigger if needed, but Reorder handles fast updates)
+  // Save order when it changes
   const handleReorder = (newOrder) => {
     setItems(newOrder)
     const orderIds = newOrder.map(item => item.id)
@@ -106,24 +136,7 @@ function Sidebar() {
       <nav className="sidebar-nav">
         <Reorder.Group axis="y" values={items} onReorder={handleReorder} className="reorder-group">
           {items.map((item) => (
-            <Reorder.Item
-              key={item.id}
-              value={item}
-              className="reorder-item-wrapper"
-            >
-              <NavLink
-                to={item.to}
-                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-              >
-                <div className="nav-item-content">
-                  <item.icon size={18} />
-                  <span>{item.label}</span>
-                </div>
-                <div className="drag-handle">
-                  <GripVertical size={14} />
-                </div>
-              </NavLink>
-            </Reorder.Item>
+            <SidebarItem key={item.id} item={item} dragControls={dragControls} />
           ))}
         </Reorder.Group>
       </nav>
