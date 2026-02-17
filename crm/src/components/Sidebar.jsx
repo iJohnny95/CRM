@@ -35,7 +35,9 @@ const ALL_NAV_ITEMS = [
   { id: 'settings', to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
-function SidebarItem({ item, dragControls }) {
+function SidebarItem({ item }) {
+  const dragControls = useDragControls()
+
   return (
     <Reorder.Item
       value={item}
@@ -72,7 +74,6 @@ function Sidebar() {
   const theme = useThemeStore(state => state.theme)
   const toggleTheme = useThemeStore(state => state.toggleTheme)
   const initTheme = useThemeStore(state => state.initTheme)
-  const dragControls = useDragControls()
 
   // Manage Nav Order State
   const [items, setItems] = useState([])
@@ -136,7 +137,7 @@ function Sidebar() {
       <nav className="sidebar-nav">
         <Reorder.Group axis="y" values={items} onReorder={handleReorder} className="reorder-group">
           {items.map((item) => (
-            <SidebarItem key={item.id} item={item} dragControls={dragControls} />
+            <SidebarItem key={item.id} item={item} />
           ))}
         </Reorder.Group>
       </nav>
