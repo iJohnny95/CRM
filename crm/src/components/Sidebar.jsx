@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
+import { Reorder } from 'framer-motion'
 import {
   LayoutDashboard,
   Users,
@@ -14,33 +15,71 @@ import {
   Magnet,
   Calendar,
   LogOut,
-  Settings
+  Settings,
+  GripVertical
 } from 'lucide-react'
 import useStore from '../store/useStore'
 import useThemeStore from '../store/useThemeStore'
 
-const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/calendar', icon: Calendar, label: 'Calendar' },
-  { to: '/leads', icon: Users, label: 'Leads' },
-  { to: '/pipeline', icon: GitBranch, label: 'Pipeline' },
-  { to: '/opportunities', icon: Target, label: 'Opportunities' },
-  { to: '/clients', icon: Handshake, label: 'Clients' },
-  { to: '/analytics', icon: TrendingUp, label: 'Analytics' },
-  { to: '/activity', icon: Activity, label: 'Activity' },
-]
-
-const adminNavItems = [
-  { to: '/automations', icon: Zap, label: 'Generate Leads' },
+const ALL_NAV_ITEMS = [
+  { id: 'dashboard', to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { id: 'calendar', to: '/calendar', icon: Calendar, label: 'Calendar' },
+  { id: 'leads', to: '/leads', icon: Users, label: 'Leads' },
+  { id: 'pipeline', to: '/pipeline', icon: GitBranch, label: 'Pipeline' },
+  { id: 'opportunities', to: '/opportunities', icon: Target, label: 'Opportunities' },
+  { id: 'clients', to: '/clients', icon: Handshake, label: 'Clients' },
+  { id: 'analytics', to: '/analytics', icon: TrendingUp, label: 'Analytics' },
+  { id: 'activity', to: '/activity', icon: Activity, label: 'Activity' },
+  { id: 'automations', to: '/automations', icon: Zap, label: 'Generate Leads', adminOnly: true },
+  { id: 'team', to: '/team', icon: Users, label: 'Team', adminOnly: true },
+  { id: 'settings', to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
 function Sidebar() {
   const profile = useStore(state => state.profile)
   const user = useStore(state => state.user)
+  const updateSettings = useStore(state => state.updateSettings)
   const isAdmin = profile?.role === 'admin'
   const theme = useThemeStore(state => state.theme)
   const toggleTheme = useThemeStore(state => state.toggleTheme)
   const initTheme = useThemeStore(state => state.initTheme)
+
+  // Manage Nav Order State
+  const [items, setItems] = useState([])
+
+  // Initialize and Sync Items
+  useEffect(() => {
+    if (!profile) return
+
+    const savedOrder = profile.settings?.nav_order || []
+
+    // Filter out items the user shouldn't see
+    const accessibleItems = ALL_NAV_ITEMS.filter(item => !item.adminOnly || isAdmin)
+
+    let sortedItems = []
+    if (savedOrder.length > 0) {
+      // 1. Sort existing accessible items by saved order
+      const existingItemsInOrder = savedOrder
+        .map(id => accessibleItems.find(item => item.id === id))
+        .filter(Boolean)
+
+      // 2. Find any new items that weren't in the saved order (e.g. new features)
+      const newItems = accessibleItems.filter(item => !savedOrder.includes(item.id))
+
+      sortedItems = [...existingItemsInOrder, ...newItems]
+    } else {
+      sortedItems = accessibleItems
+    }
+
+    setItems(sortedItems)
+  }, [profile, isAdmin])
+
+  // Save order when it changes (debounced-ish via the effect trigger if needed, but Reorder handles fast updates)
+  const handleReorder = (newOrder) => {
+    setItems(newOrder)
+    const orderIds = newOrder.map(item => item.id)
+    updateSettings({ nav_order: orderIds })
+  }
 
   useEffect(() => {
     initTheme()
@@ -65,43 +104,28 @@ function Sidebar() {
       </div>
 
       <nav className="sidebar-nav">
-        {navItems.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          >
-            <Icon size={18} />
-            <span>{label}</span>
-          </NavLink>
-        ))}
-        {isAdmin && adminNavItems.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          >
-            <Icon size={18} />
-            <span>{label}</span>
-          </NavLink>
-        ))}
-        {isAdmin && (
-          <NavLink
-            to="/team"
-            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          >
-            <Users size={18} />
-            <span>Team</span>
-          </NavLink>
-        )}
-
-        <NavLink
-          to="/settings"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <Settings size={18} />
-          <span>Settings</span>
-        </NavLink>
+        <Reorder.Group axis="y" values={items} onReorder={handleReorder} className="reorder-group">
+          {items.map((item) => (
+            <Reorder.Item
+              key={item.id}
+              value={item}
+              className="reorder-item-wrapper"
+            >
+              <NavLink
+                to={item.to}
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+              >
+                <div className="nav-item-content">
+                  <item.icon size={18} />
+                  <span>{item.label}</span>
+                </div>
+                <div className="drag-handle">
+                  <GripVertical size={14} />
+                </div>
+              </NavLink>
+            </Reorder.Item>
+          ))}
+        </Reorder.Group>
       </nav>
 
       <div className="sidebar-footer">
@@ -215,15 +239,33 @@ function Sidebar() {
         .sidebar-nav {
           flex: 1;
           padding: 12px;
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
+
+        /* Drag & Drop Reorder Styles */
+        .reorder-group {
           display: flex;
           flex-direction: column;
           gap: 4px;
-          overflow-y: auto;
+          list-style: none;
+          padding: 0;
+          margin: 0;
         }
-        
+
+        .reorder-item-wrapper {
+          position: relative;
+          z-index: 1;
+        }
+
+        .reorder-item-wrapper:active {
+          z-index: 100;
+        }
+
         .nav-item {
           display: flex;
           align-items: center;
+          justify-content: space-between;
           gap: 10px;
           padding: 10px 12px;
           border-radius: var(--radius);
@@ -232,6 +274,42 @@ function Sidebar() {
           font-weight: 500;
           transition: all var(--transition);
           position: relative;
+          background: transparent;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .nav-item-content {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
+        }
+        
+        .drag-handle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-muted);
+          opacity: 0;
+          transition: all var(--transition);
+          cursor: grab;
+          padding: 4px;
+          margin-right: -4px;
+        }
+
+        .nav-item:hover .drag-handle {
+          opacity: 0.5;
+        }
+
+        .drag-handle:hover {
+          opacity: 1 !important;
+          color: var(--accent);
+          transform: scale(1.1);
+        }
+
+        .drag-handle:active {
+          cursor: grabbing;
         }
         
         .nav-item::before {
@@ -250,7 +328,6 @@ function Sidebar() {
         .nav-item:hover {
           background: var(--bg-tertiary);
           color: var(--text-primary);
-          padding-left: 16px;
         }
         
         .nav-item:hover::before {

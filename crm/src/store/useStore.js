@@ -309,6 +309,19 @@ const useStore = create((set, get) => ({
         }
     },
 
+    // Update user settings (JSONB)
+    updateSettings: async (newSettings) => {
+        const { profile, updateProfile } = get()
+        if (!profile) return { error: { message: 'No profile found' } }
+
+        const updatedSettings = {
+            ...(profile.settings || {}),
+            ...newSettings
+        }
+
+        return await updateProfile({ settings: updatedSettings })
+    },
+
     // Fetch initial data from Supabase
     fetchInitialData: async () => {
         const { user, profile, initialized, isLoading } = get()
