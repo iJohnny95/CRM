@@ -12,6 +12,7 @@ import Analytics from './pages/Analytics'
 import Activity from './pages/Activity'
 import Calendar from './pages/Calendar'
 import Team from './pages/Team'
+import Settings from './pages/Settings'
 import Login from './pages/auth/Login'
 import ChangePassword from './pages/auth/ChangePassword'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -58,6 +59,7 @@ function App() {
                         <Route path="activity" element={<Activity />} />
                         <Route path="calendar" element={<Calendar />} />
                         <Route path="team" element={<Team />} />
+                        <Route path="settings" element={<Settings />} />
                     </Route>
                 </Route>
 

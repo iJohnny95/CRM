@@ -13,7 +13,8 @@ import {
   Activity,
   Magnet,
   Calendar,
-  LogOut
+  LogOut,
+  Settings
 } from 'lucide-react'
 import useStore from '../store/useStore'
 import useThemeStore from '../store/useThemeStore'
@@ -27,6 +28,7 @@ const navItems = [
   { to: '/clients', icon: Handshake, label: 'Clients' },
   { to: '/analytics', icon: TrendingUp, label: 'Analytics' },
   { to: '/activity', icon: Activity, label: 'Activity' },
+  { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
 const adminNavItems = [
@@ -97,13 +99,25 @@ function Sidebar() {
 
       <div className="sidebar-footer">
         <div className="user-profile">
-          <div className="user-info">
-            <span className="user-name">{useStore.getState().profile?.full_name || 'User'}</span>
-            <span className="user-email">{useStore.getState().user?.email}</span>
-            {useStore.getState().profile?.role === 'admin' && <span className="admin-badge">Admin</span>}
+          <div className="user-avatar-container">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt={profile.full_name} className="user-avatar" />
+            ) : (
+              <div className="user-avatar-placeholder">
+                {(profile?.full_name || 'U').charAt(0).toUpperCase()}
+              </div>
+            )}
+            {isAdmin && <div className="status-indicator"></div>}
           </div>
+
+          <div className="user-info">
+            <span className="user-name">{profile?.full_name || 'User'}</span>
+            <span className="user-email">{user?.email}</span>
+            {isAdmin && <span className="admin-badge">Admin</span>}
+          </div>
+
           <button className="logout-btn" onClick={() => useStore.getState().logout()} title="Logout">
-            <LogOut size={18} />
+            <LogOut size={16} />
           </button>
         </div>
       </div>
@@ -263,18 +277,58 @@ function Sidebar() {
         .user-profile {
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          gap: 12px;
           padding: 12px;
-          background: var(--bg-tertiary);
-          border-radius: var(--radius);
-          margin-bottom: 16px;
+          background: rgba(255, 255, 255, 0.03);
+          border-radius: var(--radius-lg);
           border: 1px solid var(--border);
+          position: relative;
+          transition: all var(--transition);
+        }
+
+        .user-profile:hover {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: var(--accent-subtle);
+        }
+
+        .user-avatar-container {
+          position: relative;
+          width: 40px;
+          height: 40px;
+          flex-shrink: 0;
+        }
+
+        .user-avatar, .user-avatar-placeholder {
+          width: 100%;
+          height: 100%;
+          border-radius: 12px;
+          object-fit: cover;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 16px;
+          background: var(--accent);
+          color: white;
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .status-indicator {
+          position: absolute;
+          bottom: -2px;
+          right: -2px;
+          width: 12px;
+          height: 12px;
+          background: #10b981;
+          border: 2px solid var(--bg-secondary);
+          border-radius: 50%;
         }
 
         .user-info {
+          flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 1px;
           min-width: 0;
         }
 
@@ -308,15 +362,15 @@ function Sidebar() {
         }
 
         .logout-btn {
-          width: 32px;
-          height: 32px;
+          width: 28px;
+          height: 28px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: transparent;
+          background: rgba(255, 255, 255, 0.05);
           border: 1px solid var(--border);
-          border-radius: var(--radius-sm);
-          color: var(--text-secondary);
+          border-radius: 8px;
+          color: var(--text-muted);
           cursor: pointer;
           transition: all var(--transition);
           flex-shrink: 0;
@@ -325,8 +379,8 @@ function Sidebar() {
         .logout-btn:hover {
           background: rgba(239, 68, 68, 0.1);
           color: #ef4444;
-          border-color: #ef4444;
-          box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+          border-color: rgba(239, 68, 68, 0.3);
+          transform: translateY(-1px);
         }
       `}</style>
     </aside>

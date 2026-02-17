@@ -252,6 +252,63 @@ const useStore = create((set, get) => ({
         }
     },
 
+    // Update profile data
+    updateProfile: async (updates) => {
+        const { user } = get()
+        if (!user) return { error: { message: 'No user session found' } }
+
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .update({
+                    ...updates,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', user.id)
+                .select()
+                .single()
+
+            if (error) throw error
+            if (data) {
+                set({ profile: data })
+                return { data }
+            }
+        } catch (error) {
+            console.error('Failed to update profile:', error)
+            return { error }
+        }
+    },
+
+    // Upload avatar image
+    uploadAvatar: async (file) => {
+        const { user } = get()
+        if (!user) return { error: { message: 'No user session found' } }
+
+        try {
+            const fileExt = file.name.split('.').pop()
+            const fileName = `${user.id}-${Math.random()}.${fileExt}`
+            const filePath = `${fileName}`
+
+            // 1. Upload to storage
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file)
+
+            if (uploadError) throw uploadError
+
+            // 2. Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath)
+
+            // 3. Update profile with new URL
+            return await get().updateProfile({ avatar_url: publicUrl })
+        } catch (error) {
+            console.error('Failed to upload avatar:', error)
+            return { error }
+        }
+    },
+
     // Fetch initial data from Supabase
     fetchInitialData: async () => {
         const { user, profile, initialized, isLoading } = get()
