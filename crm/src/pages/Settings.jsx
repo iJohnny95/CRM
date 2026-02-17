@@ -13,12 +13,14 @@ import {
 } from 'lucide-react'
 import useStore from '../store/useStore'
 import { supabase } from '../lib/supabase'
+import ImageCropper from '../components/ImageCropper'
 
 function Settings() {
   const { user, profile, updateProfile, uploadAvatar } = useStore()
   const [activeTab, setActiveTab] = useState('profile')
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [tempImage, setTempImage] = useState(null)
   const fileInputRef = useRef(null)
 
   // Profile Form State
@@ -70,11 +72,33 @@ function Settings() {
     }
   }
 
-  const handleAvatarUpload = async (e) => {
+  const handleFileSelect = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Limit file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      showMessage('error', 'File is too large. Max 2MB.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setTempImage(reader.result)
+    }
+    reader.readAsDataURL(file)
+
+    // Reset input so the same file can be selected again if needed
+    e.target.value = ''
+  }
+
+  const handleCropComplete = async (croppedBlob) => {
+    setTempImage(null)
     setIsSaving(true)
+
+    // Create a file from the blob
+    const file = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' })
+
     const { error } = await uploadAvatar(file)
     setIsSaving(false)
 
@@ -158,7 +182,7 @@ function Settings() {
                     ref={fileInputRef}
                     hidden
                     accept="image/*"
-                    onChange={handleAvatarUpload}
+                    onChange={handleFileSelect}
                   />
                 </div>
               </div>
@@ -236,6 +260,14 @@ function Settings() {
           )}
         </main>
       </div>
+
+      {tempImage && (
+        <ImageCropper
+          image={tempImage}
+          onCropComplete={handleCropComplete}
+          onCancel={() => setTempImage(null)}
+        />
+      )}
 
       <style>{`
         .settings-container {
