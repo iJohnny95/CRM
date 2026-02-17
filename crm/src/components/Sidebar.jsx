@@ -28,7 +28,6 @@ const navItems = [
   { to: '/clients', icon: Handshake, label: 'Clients' },
   { to: '/analytics', icon: TrendingUp, label: 'Analytics' },
   { to: '/activity', icon: Activity, label: 'Activity' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
 const adminNavItems = [
@@ -95,6 +94,14 @@ function Sidebar() {
             <span>Team</span>
           </NavLink>
         )}
+
+        <NavLink
+          to="/settings"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <Settings size={18} />
+          <span>Settings</span>
+        </NavLink>
       </nav>
 
       <div className="sidebar-footer">
