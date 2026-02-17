@@ -50,3 +50,6 @@ Thumbs.db
 
 # Output data
 data/
+
+# Scripts
+crm/scripts/
