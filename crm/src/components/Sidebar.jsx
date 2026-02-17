@@ -37,7 +37,6 @@ function Sidebar() {
   const profile = useStore(state => state.profile)
   const user = useStore(state => state.user)
   const isAdmin = profile?.role === 'admin'
-  const stats = useStore(state => state.getStats())
   const theme = useThemeStore(state => state.theme)
   const toggleTheme = useThemeStore(state => state.toggleTheme)
   const initTheme = useThemeStore(state => state.initTheme)
@@ -106,21 +105,6 @@ function Sidebar() {
           <button className="logout-btn" onClick={() => useStore.getState().logout()} title="Logout">
             <LogOut size={18} />
           </button>
-        </div>
-
-        <div className="sidebar-stats-container">
-          <div className="sidebar-stat-row">
-            <span>Total Leads</span>
-            <span className="sidebar-stat-value">{stats.total}</span>
-          </div>
-          <div className="sidebar-stat-row">
-            <span>To Contact</span>
-            <span className="sidebar-stat-value accent">{stats.byStage?.new || 0}</span>
-          </div>
-          <div className="sidebar-stat-row">
-            <span>Won</span>
-            <span className="sidebar-stat-value success">{stats.byStage?.won || 0}</span>
-          </div>
         </div>
       </div>
 
@@ -275,49 +259,6 @@ function Sidebar() {
           border-top: 1px solid var(--border);
         }
         
-        .sidebar-stats-container {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        
-        .sidebar-stat-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: var(--text-xs);
-          color: var(--text-tertiary);
-          padding: 4px 8px;
-          border-radius: var(--radius-sm);
-          transition: all var(--transition);
-        }
-        
-        .sidebar-stat-row:hover {
-          background: var(--bg-tertiary);
-        }
-        
-        .sidebar-stat-value {
-          font-weight: 600;
-          color: var(--text-primary);
-          font-variant-numeric: tabular-nums;
-          transition: all var(--transition);
-        }
-        
-        .sidebar-stat-value.accent {
-          color: var(--accent);
-        }
-        
-        .sidebar-stat-row:hover .sidebar-stat-value.accent {
-          text-shadow: 0 0 10px var(--accent);
-        }
-        
-        .sidebar-stat-value.success {
-          color: var(--success);
-        }
-        
-        .sidebar-stat-row:hover .sidebar-stat-value.success {
-          text-shadow: 0 0 10px var(--success);
-        }
 
         .user-profile {
           display: flex;
