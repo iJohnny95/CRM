@@ -310,6 +310,35 @@ function Pipeline() {
         .notes-tag:hover {
           box-shadow: 0 0 10px -3px var(--accent);
         }
+        @media (max-width: 768px) {
+          .pipeline-page {
+            padding: 12px;
+            height: calc(100vh - 120px); /* Adjust for mobile header/tabs */
+          }
+          
+          .pipeline-board {
+            gap: 16px;
+            padding: 4px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+          }
+          
+          .pipeline-column {
+            flex: 0 0 85vw;
+            min-width: 85vw;
+            max-width: 320px;
+            scroll-snap-align: center;
+            height: 100%;
+          }
+          
+          .column-body {
+            padding: 12px;
+          }
+          
+          .pipeline-card {
+            padding: 16px; /* Larger touch targets */
+          }
+        }
       `}</style>
     </div>
   )

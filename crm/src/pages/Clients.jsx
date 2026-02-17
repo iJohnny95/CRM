@@ -99,6 +99,12 @@ function Clients() {
           gap: var(--gap-lg);
         }
         
+        @media (max-width: 480px) {
+          .clients-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+        
         .client-card {
           background: var(--bg-secondary);
           border: 1px solid var(--border);

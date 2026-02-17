@@ -1,17 +1,47 @@
-import { Outlet } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
+import MobileHeader from './MobileHeader'
 
 function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768)
+  const location = useLocation()
+
+  // Auto-close sidebar on mobile when navigating
+  useEffect(() => {
+    if (window.innerWidth <= 768) {
+      setSidebarOpen(false)
+    }
+  }, [location])
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setSidebarOpen(true)
+      } else {
+        setSidebarOpen(false)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   return (
-    <div className="app-layout">
-      <Sidebar />
+    <div className={`app-layout ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
       <main className="main-content">
-        {/* Animated background orbs */}
+        <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
+
+        {/* Animated background orbs moved inside or handled via CSS */}
         <div className="ambient-bg">
           <div className="orb orb-1"></div>
           <div className="orb orb-2"></div>
           <div className="orb orb-3"></div>
         </div>
+
         <Outlet />
       </main>
 
@@ -27,7 +57,15 @@ function Layout() {
           min-height: 100vh;
           background: var(--bg-primary);
           position: relative;
-          overflow: visible;
+          overflow-x: hidden;
+          transition: margin-left var(--transition);
+        }
+
+        @media (max-width: 768px) {
+          .main-content {
+            margin-left: 0;
+            padding-bottom: 80px; 
+          }
         }
         
         /* Ambient Background */
@@ -40,6 +78,13 @@ function Layout() {
           pointer-events: none;
           overflow: hidden;
           z-index: 0;
+          transition: left var(--transition);
+        }
+
+        @media (max-width: 768px) {
+          .ambient-bg {
+            left: 0;
+          }
         }
         
         .orb {
@@ -104,14 +149,12 @@ function Layout() {
           }
         }
         
-        /* Reduce animation for users who prefer reduced motion */
         @media (prefers-reduced-motion: reduce) {
           .orb {
             animation: none;
           }
         }
         
-        /* Ensure page content is above the background */
         .main-content > *:not(.ambient-bg) {
           position: relative;
           z-index: 1;

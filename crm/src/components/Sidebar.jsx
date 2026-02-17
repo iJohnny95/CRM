@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Reorder, useDragControls } from 'framer-motion'
+import { Reorder, useDragControls, motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
   Users,
@@ -16,7 +16,8 @@ import {
   Calendar,
   LogOut,
   Settings,
-  GripVertical
+  GripVertical,
+  X
 } from 'lucide-react'
 import useStore from '../store/useStore'
 import useThemeStore from '../store/useThemeStore'
@@ -35,7 +36,7 @@ const ALL_NAV_ITEMS = [
   { id: 'settings', to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
-function SidebarItem({ item }) {
+function SidebarItem({ item, onNavClick }) {
   const dragControls = useDragControls()
 
   return (
@@ -49,6 +50,7 @@ function SidebarItem({ item }) {
       <NavLink
         to={item.to}
         draggable="false"
+        onClick={onNavClick}
         className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
       >
         <div className="nav-item-content">
@@ -66,7 +68,7 @@ function SidebarItem({ item }) {
   )
 }
 
-function Sidebar() {
+function Sidebar({ isOpen, onClose }) {
   const profile = useStore(state => state.profile)
   const user = useStore(state => state.user)
   const updateSettings = useStore(state => state.updateSettings)
@@ -116,58 +118,89 @@ function Sidebar() {
     initTheme()
   }, [initTheme])
 
+  // Handle interaction for nav items
+  const handleNavClick = () => {
+    if (window.innerWidth <= 768) {
+      onClose()
+    }
+  }
+
   return (
-    <aside className="sidebar">
-      <div className="sidebar-header">
-        <div className="logo">
-          <div className="logo-icon">
-            <Magnet size={20} />
-          </div>
-          <span className="logo-text">LeadCRM</span>
-        </div>
-        <button
-          className="theme-toggle"
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-      </div>
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop for mobile */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="sidebar-backdrop"
+          />
 
-      <nav className="sidebar-nav">
-        <Reorder.Group axis="y" values={items} onReorder={handleReorder} className="reorder-group">
-          {items.map((item) => (
-            <SidebarItem key={item.id} item={item} />
-          ))}
-        </Reorder.Group>
-      </nav>
-
-      <div className="sidebar-footer">
-        <div className="user-profile">
-          <div className="user-avatar-container">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt={profile.full_name} className="user-avatar" />
-            ) : (
-              <div className="user-avatar-placeholder">
-                {(profile?.full_name || 'U').charAt(0).toUpperCase()}
+          <motion.aside
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className={`sidebar ${isOpen ? 'open' : ''}`}
+          >
+            <div className="sidebar-header">
+              <div className="logo">
+                <div className="logo-icon">
+                  <Magnet size={20} />
+                </div>
+                <span className="logo-text">LeadCRM</span>
               </div>
-            )}
-            {isAdmin && <div className="status-indicator"></div>}
-          </div>
 
-          <div className="user-info">
-            <span className="user-name">{profile?.full_name || 'User'}</span>
-            <span className="user-email">{user?.email}</span>
-            {isAdmin && <span className="admin-badge">Admin</span>}
-          </div>
+              <div className="header-actions">
+                <button
+                  className="theme-toggle"
+                  onClick={toggleTheme}
+                  title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+                <button className="mobile-close-btn" onClick={onClose}>
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
 
-          <button className="logout-btn" onClick={() => useStore.getState().logout()} title="Logout">
-            <LogOut size={16} />
-          </button>
-        </div>
-      </div>
+            <nav className="sidebar-nav">
+              <Reorder.Group axis="y" values={items} onReorder={handleReorder} className="reorder-group">
+                {items.map((item) => (
+                  <SidebarItem key={item.id} item={item} onNavClick={handleNavClick} />
+                ))}
+              </Reorder.Group>
+            </nav>
 
-      <style>{`
+            <div className="sidebar-footer">
+              <div className="user-profile">
+                <div className="user-avatar-container">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt={profile.full_name} className="user-avatar" />
+                  ) : (
+                    <div className="user-avatar-placeholder">
+                      {(profile?.full_name || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {isAdmin && <div className="status-indicator"></div>}
+                </div>
+
+                <div className="user-info">
+                  <span className="user-name">{profile?.full_name || 'User'}</span>
+                  <span className="user-email">{user?.email}</span>
+                  {isAdmin && <span className="admin-badge">Admin</span>}
+                </div>
+
+                <button className="logout-btn" onClick={() => useStore.getState().logout()} title="Logout">
+                  <LogOut size={16} />
+                </button>
+              </div>
+            </div>
+
+            <style>{`
         .sidebar {
           width: var(--sidebar-width);
           height: 100vh;
@@ -178,7 +211,50 @@ function Sidebar() {
           position: fixed;
           left: 0;
           top: 0;
-          z-index: 50;
+          z-index: 100;
+        }
+
+        .sidebar-backdrop {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(4px);
+          z-index: 90;
+        }
+        
+        .mobile-close-btn {
+          display: none;
+          background: transparent;
+          border: none;
+          color: var(--text-secondary);
+          cursor: pointer;
+          padding: 4px;
+          border-radius: var(--radius);
+          transition: all var(--transition);
+        }
+
+        .mobile-close-btn:hover {
+          background: var(--bg-tertiary);
+          color: #ef4444;
+        }
+
+        @media (max-width: 768px) {
+          .sidebar-backdrop {
+            display: block;
+          }
+          .mobile-close-btn {
+            display: flex;
+          }
+          .sidebar-header {
+            padding: 12px 16px;
+          }
+        }
+        
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
         
         .sidebar-header {
@@ -481,7 +557,10 @@ function Sidebar() {
           transform: translateY(-1px);
         }
       `}</style>
-    </aside>
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
   )
 }
 

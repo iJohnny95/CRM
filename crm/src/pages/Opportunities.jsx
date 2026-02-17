@@ -83,6 +83,12 @@ function Opportunities() {
           gap: var(--gap-lg);
         }
         
+        @media (max-width: 480px) {
+          .opportunities-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+        
         .opportunity-card {
           background: var(--bg-secondary);
           border: 1px solid var(--border);

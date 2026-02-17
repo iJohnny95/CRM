@@ -67,6 +67,7 @@ function Activity() {
     const leads = useStore(state => state.leads)
     const [filterType, setFilterType] = useState('all')
     const [searchQuery, setSearchQuery] = useState('')
+    const [isFiltersOpen, setIsFiltersOpen] = useState(false)
     const [visibleCount, setVisibleCount] = useState(20)
 
     // Handle incoming filter from navigation state
@@ -159,11 +160,18 @@ function Activity() {
 
     return (
         <div className="page activity-page">
-            <header className="page-header">
-                <div>
+            <header className="page-header sticky-header">
+                <div className="header-info">
                     <h1>Activity</h1>
                     <p>Track all your interactions and actions within the CRM</p>
                 </div>
+                <button
+                    className={`mobile-filter-toggle ${isFiltersOpen ? 'active' : ''}`}
+                    onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                >
+                    <Filter size={18} />
+                    <span>Filters</span>
+                </button>
             </header>
 
             <div className="activity-layout-v2 animate-fade-in">
@@ -326,10 +334,10 @@ function Activity() {
                             </div>
 
                             {/* Filters List */}
-                            <div className="sidebar-compact-group filters">
+                            <div className={`sidebar-compact-group filters ${isFiltersOpen ? 'mobile-open' : ''}`}>
                                 <button
                                     className={`compact-filter-item ${filterType === 'all' ? 'active' : ''}`}
-                                    onClick={() => { setFilterType('all'); setVisibleCount(20); }}
+                                    onClick={() => { setFilterType('all'); setVisibleCount(20); if (window.innerWidth <= 1024) setIsFiltersOpen(false); }}
                                 >
                                     <div className="filter-dot" style={{ background: 'var(--accent)' }} />
                                     <span>All Activities</span>
@@ -338,7 +346,7 @@ function Activity() {
                                     <button
                                         key={type}
                                         className={`compact-filter-item ${filterType === type ? 'active' : ''}`}
-                                        onClick={() => { setFilterType(type); setVisibleCount(20); }}
+                                        onClick={() => { setFilterType(type); setVisibleCount(20); if (window.innerWidth <= 1024) setIsFiltersOpen(false); }}
                                     >
                                         <div className="filter-dot" style={{ background: config.color }} />
                                         <span>{config.label}</span>
@@ -790,20 +798,98 @@ function Activity() {
                 @media (max-width: 1024px) {
                     .activity-layout-v2 {
                         grid-template-columns: 1fr;
+                        gap: var(--gap-lg);
                     }
                     .sidebar-column {
                         position: static;
+                        transform: none;
                         order: -1;
+                        width: 100%;
+                    }
+                    .sticky-sidebar {
+                        width: 100%;
+                        position: static;
+                    }
+                    .sidebar-compact-container {
+                        border-radius: 16px;
+                    }
+                    
+                    /* Hide filters by default on mobile */
+                    .sidebar-compact-group.filters {
+                        display: none;
+                        animation: slide-down 0.3s ease-out;
+                    }
+                    .sidebar-compact-group.filters.mobile-open {
+                        display: flex;
+                    }
+                    .sidebar-compact-divider {
+                        display: none;
+                    }
+                    .sidebar-compact-header:has(+ .filters) {
+                        display: none;
                     }
                 }
 
+                @keyframes slide-down {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                .mobile-filter-toggle {
+                    display: none;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 8px 16px;
+                    background: var(--bg-secondary);
+                    border: 1px solid var(--border);
+                    border-radius: 99px;
+                    color: var(--text-secondary);
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all var(--transition);
+                }
+
+                .mobile-filter-toggle.active {
+                    background: var(--accent);
+                    color: white;
+                    border-color: var(--accent);
+                    box-shadow: 0 0 15px -3px var(--accent);
+                }
+
                 @media (max-width: 600px) {
+                    .page-header {
+                        margin-bottom: var(--gap-md);
+                        align-items: center;
+                    }
+                    .mobile-filter-toggle {
+                        display: flex;
+                    }
+                    .timeline-column {
+                        padding: 0;
+                    }
                     .timeline-header-v2 {
                         flex-direction: column;
                         align-items: stretch;
+                        gap: 12px;
+                        padding: 0 var(--page-padding);
                     }
                     .search-bar-v2 {
                         max-width: none;
+                    }
+                    .activity-count {
+                        text-align: center;
+                    }
+                    .sidebar-column {
+                        padding: 0 var(--page-padding);
+                    }
+                    .sidebar-compact-group.statistics {
+                        gap: 8px;
+                        padding: 12px;
+                    }
+                    .mini-stat-item {
+                        padding: 10px;
+                        border-radius: 12px;
                     }
                 }
             `}</style>

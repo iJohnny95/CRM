@@ -33,7 +33,9 @@ import {
   Send,
   Sparkles,
   Search,
-  Users
+  Users,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import useStore, { STAGES, PRIORITIES, ACTIVITY_TYPES } from '../store/useStore'
 import { format, formatDistanceToNow } from 'date-fns'
@@ -476,11 +478,13 @@ function LeadDetail() {
             </div>
           </div>
 
-          <div className="quick-actions">
-            <button className="quick-btn primary" onClick={() => navigate(`/leads/${lead.id}/call-mode`)}>
-              <Phone size={18} />
-              <span>Log Call</span>
-            </button>
+          <div className="hero-actions">
+            <div className="quick-actions">
+              <button className="quick-btn primary" onClick={() => navigate(`/leads/${lead.id}/call-mode`)}>
+                <Phone size={18} />
+                <span>Log Call</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -604,48 +608,57 @@ function LeadDetail() {
                       <div className="info-item-row">
                         <Phone size={14} className="info-icon" />
                         <span className="info-label">Phone</span>
-                        <EditableField
-                          value={lead.phone}
-                          onSave={(v) => updateLeadField(lead.id, 'phone', v)}
-                          placeholder="Add phone..."
-                          className="info-value-edit"
-                        />
-                      </div>
-                      <div className="info-item-row">
-                        <MapPin size={14} className="info-icon" />
-                        <span className="info-label">Address</span>
-                        <EditableField
-                          value={lead.address}
-                          onSave={(v) => updateLeadField(lead.id, 'address', v)}
-                          placeholder="Add address..."
-                          className="info-value-edit"
-                        />
-                      </div>
-                      <div className="info-item-row">
-                        <Globe size={14} className="info-icon" />
-                        <span className="info-label">Website</span>
-                        <div className="info-value-edit">
+                        <div className="info-value">
                           <EditableField
-                            value={lead.website}
-                            onSave={(v) => {
-                              updateLeadField(lead.id, 'website', v);
-                              updateLeadField(lead.id, 'has_website', !!v);
-                            }}
-                            placeholder="Add website..."
+                            value={lead.phone}
+                            onSave={(v) => updateLeadField(lead.id, 'phone', v)}
+                            placeholder="Add phone..."
+                            className="info-value-edit"
                           />
                         </div>
                       </div>
                       <div className="info-item-row">
-                        <Star size={14} className="info-icon" fill="#f59e0b" stroke="#f59e0b" />
+                        <MapPin size={14} className="info-icon" />
+                        <span className="info-label">City</span>
+                        <div className="info-value">
+                          <EditableField
+                            value={lead.city}
+                            onSave={(v) => updateLeadField(lead.id, 'city', v)}
+                            placeholder="Add city..."
+                            className="info-value-edit"
+                          />
+                        </div>
+                      </div>
+                      <div className="info-item-row">
+                        <MapPin size={14} className="info-icon" />
+                        <span className="info-label">Address</span>
+                        <div className="info-value">
+                          <EditableField
+                            value={lead.address}
+                            onSave={(v) => updateLeadField(lead.id, 'address', v)}
+                            placeholder="Add address..."
+                            className="info-value-edit"
+                          />
+                        </div>
+                      </div>
+                      <div className="info-item-row">
+                        <Globe size={14} className="info-icon" />
+                        <span className="info-label">Website</span>
+                        <div className="info-value">
+                          <EditableField
+                            value={lead.website}
+                            onSave={(v) => updateLeadField(lead.id, 'website', v)}
+                            placeholder="Add website..."
+                            className="info-value-edit"
+                          />
+                        </div>
+                      </div>
+                      <div className="info-item-row">
+                        <Star size={14} className="info-icon" />
                         <span className="info-label">Rating</span>
-                        <EditableField
-                          value={lead.rating}
-                          onSave={(v) => updateLeadField(lead.id, 'rating', v)}
-                          placeholder="0.0"
-                          type="number"
-                          className="info-value-edit"
-                          suffix={lead.review_count > 0 ? ` (${lead.review_count} reviews)` : ''}
-                        />
+                        <div className="info-value">
+                          {lead.rating ? `${lead.rating} / 5.0` : 'N/A'}
+                        </div>
                       </div>
                     </div>
                     {lead.google_maps_url && (
@@ -698,6 +711,38 @@ function LeadDetail() {
                         />
                       </div>
                     </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Deal Card for Mobile (Shown here if screened small) */}
+              <section className="card deal-card mobile-only animate-fade-in">
+                <div className="deal-header-row">
+                  <h3 className="card-title"><Euro size={16} /> Deal Value</h3>
+                  <div className="deal-amount">
+                    <EditableField
+                      value={lead.deal_value}
+                      onSave={(v) => updateLeadField(lead.id, 'deal_value', v)}
+                      type="number"
+                      placeholder="0"
+                      prefix="€"
+                      className="deal-field"
+                    />
+                  </div>
+                </div>
+                <div className="deal-meta-mobile">
+                  <div className="meta-item">
+                    <span>Probability</span>
+                    <strong>{currentStage?.probability || 0}%</strong>
+                  </div>
+                  <div className="meta-item">
+                    <span>Expected Close</span>
+                    <EditableField
+                      value={lead.expected_close_date?.slice(0, 10)}
+                      onSave={(v) => updateLeadField(lead.id, 'expected_close_date', v ? new Date(v).toISOString() : null)}
+                      type="date"
+                      placeholder="Set date"
+                    />
                   </div>
                 </div>
               </section>
@@ -1005,15 +1050,18 @@ function LeadDetail() {
             </div>
           </section>
         </div>
-      </div>
+        {/* Floating AI Chat Widget - Admin only */}
+        {profile?.role === 'admin' && <AiChatWidget lead={lead} updateLeadField={updateLeadField} />}
 
-      {/* Floating AI Chat Widget - Admin only */}
-      {profile?.role === 'admin' && <AiChatWidget lead={lead} updateLeadField={updateLeadField} />}
-
-      <style>{`
+        <style>{`
         .lead-detail-v2 {
           max-width: 100%;
         }
+
+        .mobile-only { display: none; }
+        .desktop-only { display: block; }
+
+        .hero-actions { display: flex; align-items: center; }
         
         /* Header */
         .detail-header {
@@ -1043,10 +1091,33 @@ function LeadDetail() {
           border: 1px solid var(--border);
           border-radius: var(--radius-lg);
           padding: 24px 28px;
-          margin-bottom: var(--gap-lg);
+          margin-bottom: 32px; /* Increased from gap-lg */
           position: relative;
           overflow: hidden;
           transition: all var(--transition);
+        }
+
+        /* Layout */
+        .detail-layout {
+          display: grid;
+          grid-template-columns: 1fr 320px;
+          gap: 32px; /* Increased from gap-xl (24px) */
+        }
+        
+        /* Modern Card Spacing */
+        .detail-main > section,
+        .detail-sidebar > section {
+            margin-bottom: 24px;
+        }
+
+        .tabs-container {
+          display: flex;
+          gap: 4px;
+          background: var(--bg-tertiary);
+          padding: 4px;
+          border-radius: var(--radius);
+          margin-bottom: 32px; /* Increased from gap-xl */
+          width: fit-content;
         }
         
         .hero-card:hover {
@@ -1070,6 +1141,25 @@ function LeadDetail() {
           align-items: flex-start;
           gap: 24px;
           flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+          .detail-header { margin-bottom: var(--gap-md); }
+          .hero-card { padding: 16px; }
+          .hero-content { flex-direction: column; align-items: flex-start; gap: 16px; }
+          .hero-actions { width: 100%; }
+          .quick-btn.primary { width: 100%; justify-content: center; height: 44px; }
+          
+          .detail-layout { grid-template-columns: 1fr; gap: var(--gap-md); padding-bottom: 20px; }
+          .tabs-container { overflow-x: auto; white-space: nowrap; margin-bottom: var(--gap-md); padding: 4px; }
+          .tab { padding: 8px 16px; flex-shrink: 0; }
+          
+          .desktop-only { display: none; }
+          .mobile-only { display: block; }
+          
+          .deal-amount { margin: 12px 0; }
+          .deal-meta { flex-direction: column; gap: 12px; align-items: flex-start; border: none; padding: 0; }
+          .deal-row { width: 100%; justify-content: space-between; display: flex; align-items: center; }
         }
         
         .hero-badges {
@@ -1136,15 +1226,7 @@ function LeadDetail() {
         }
         
         /* Tabs */
-        .tabs-container {
-          display: flex;
-          gap: 4px;
-          background: var(--bg-tertiary);
-          padding: 4px;
-          border-radius: var(--radius);
-          margin-bottom: var(--gap-xl);
-          width: fit-content;
-        }
+        /* .tabs-container moved to above .hero-card:hover */
         
         .tab {
           padding: 8px 20px;
@@ -1174,43 +1256,192 @@ function LeadDetail() {
           gap: var(--gap-xl);
         }
         
-        @media (max-width: 1000px) {
-          .detail-layout { grid-template-columns: 1fr; }
-          .detail-sidebar { order: -1; }
-        }
-        
-        .detail-main {
-          display: flex;
-          flex-direction: column;
-          gap: var(--gap-xl);
-        }
-        
-        .detail-sidebar {
-          display: flex;
-          flex-direction: column;
-          gap: var(--gap-lg);
-        }
-        
-        /* Info Card - New Organized Layout */
-        .info-card {
-          padding: 0;
-          overflow: hidden;
-        }
-        
-        .info-section-row {
-          display: grid;
-          grid-template-columns: 1fr auto 1fr;
-          min-height: 280px;
-        }
-        
+        /* Mobile Styles */
         @media (max-width: 768px) {
-          .info-section-row {
-            grid-template-columns: 1fr;
+          .detail-header {
+             margin-bottom: var(--gap-md);
           }
-          .info-divider { display: none; }
-          .info-col { border-bottom: 1px solid var(--border); }
-          .info-col:last-child { border-bottom: none; }
+          
+          .hero-card {
+            padding: 16px 20px;
+            margin-bottom: var(--gap-md);
+          }
+          
+          .hero-main h1 { font-size: 1.25rem; }
+          .hero-actions-desktop { display: none; }
+          
+          .tabs-container {
+            width: 100%;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 4px;
+            margin-bottom: var(--gap-md);
+            -webkit-overflow-scrolling: touch;
+          }
+          
+          .tab {
+            padding: 6px 14px;
+            flex-shrink: 0;
+          }
+
+          .detail-layout {
+            grid-template-columns: 1fr;
+            gap: var(--gap-md);
+            padding-bottom: 80px; /* Space for sticky bar */
+          }
+          
+          .desktop-only { display: none; }
+          .mobile-only { display: block; }
+          
+          .info-col { padding: 16px; }
+          
+          /* Mobile Stage Summary */
+          .mobile-stage-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: var(--gap-md);
+            cursor: pointer;
+          }
+          
+          .stage-summary-info .label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+          }
+          
+          .stage-summary-info .value {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: var(--text-sm);
+          }
+          
+          .stage-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+          }
+          
+          .summary-chevron {
+            color: var(--text-muted);
+            transition: transform var(--transition);
+          }
+          
+          .summary-chevron.rotated { transform: rotate(180deg); }
+          
+          .mobile-stage-dropdown {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-top: -12px;
+            margin-bottom: var(--gap-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+          }
+          
+          .mobile-stage-opt {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            font-size: var(--text-sm);
+            text-align: left;
+            cursor: pointer;
+          }
+          
+          .mobile-stage-opt:last-child { border-bottom: none; }
+          .mobile-stage-opt.active { background: var(--bg-tertiary); color: var(--accent); }
+          .opt-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+          /* Mobile Deal Card */
+          .deal-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+          }
+          
+          .deal-meta-mobile {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-subtle);
+          }
+          
+          .meta-item span {
+            display: block;
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+          }
+          
+          .meta-item strong { font-size: var(--text-sm); }
+          
+          /* Mobile Sticky Bar */
+          .mobile-action-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: var(--bg-elevated);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            z-index: 100;
+          }
+          
+          .mobile-action-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+          }
+          
+          .mobile-action-btn.primary {
+            flex: 2;
+            flex-direction: row;
+            justify-content: center;
+            height: 44px;
+            background: var(--accent);
+            color: white;
+            border-radius: var(--radius);
+            font-size: var(--text-sm);
+            gap: 8px;
+          }
+          
+          .mobile-action-divider {
+            width: 1px;
+            height: 30px;
+            background: var(--border);
+          }
         }
+        
+        .mobile-only { display: none; }
         
         .info-col {
           padding: 20px 24px;
@@ -1943,7 +2174,58 @@ function LeadDetail() {
           }
         }
 
+        @media (max-width: 768px) {
+          .lead-detail-page {
+            padding: 16px;
+          }
+          
+          .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 20px;
+          }
+          
+          .quick-actions {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          
+          .quick-actions::-webkit-scrollbar { display: none; }
+          
+          .tabs-container {
+            width: 100%;
+            overflow-x: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .tabs-container::-webkit-scrollbar { display: none; }
+          
+          .tab {
+            white-space: nowrap;
+          }
+          
+          .info-col {
+            padding: 16px;
+          }
+          
+          .info-item-row {
+            grid-template-columns: 20px 1fr;
+            gap: 12px;
+          }
+          
+          .info-label {
+            display: none; /* Combine label and value or just show icon + value */
+          }
+          
+          .deal-field {
+            font-size: 1.25rem;
+          }
+        }
       `}</style>
+      </div>
     </div>
   )
 }

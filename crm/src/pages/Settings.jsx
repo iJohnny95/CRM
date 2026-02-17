@@ -549,6 +549,35 @@ function Settings() {
           .settings-main {
             padding: 24px;
           }
+
+          .avatar-upload-area {
+            flex-direction: column;
+            text-align: center;
+            gap: 20px;
+            padding: 24px;
+          }
+
+          .settings-form {
+            max-width: 100%;
+          }
+
+          .btn-primary {
+            width: 100%;
+          }
+
+          .tabs-sidebar::-webkit-scrollbar {
+            display: none;
+          }
+          .tabs-sidebar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .page-header h1 { font-size: 24px; }
+          .settings-main { padding: 20px 16px; }
+          .status-msg { font-size: 13px; padding: 12px; }
         }
       `}</style>
     </div>

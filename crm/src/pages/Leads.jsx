@@ -529,7 +529,7 @@ function Leads() {
             <input
               type="text"
               className="input search-input-v2"
-              placeholder="Search by name, phone, address, or business type..."
+              placeholder="Search leads..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -542,10 +542,9 @@ function Leads() {
               <button
                 className={`btn-filter-toggle ${showFilters ? 'active' : ''} ${hasActiveFilters ? 'has-active' : ''}`}
                 onClick={() => setShowFilters(!showFilters)}
-                title={showFilters ? "Hide Filters" : "Show Filters"}
               >
                 <SlidersHorizontal size={18} />
-                <span>Filters</span>
+                <span className="hide-mobile">Filters</span>
                 {hasActiveFilters && <span className="filter-badge" />}
               </button>
             </div>
@@ -786,164 +785,224 @@ function Leads() {
           </div>
         </div>
       ) : (
-        <div className="table-container animate-fade-in">
-          <table>
-            <thead>
-              <tr>
-                <th style={{ width: '40px' }}>
-                  <div className="checkbox-wrapper" onClick={toggleSelectAll}>
-                    {selectedLeads.length === leads.length && leads.length > 0 ? (
-                      <CheckSquare size={18} className="checkbox-icon checked" />
-                    ) : (
-                      <Square size={18} className="checkbox-icon" />
+        <>
+          {/* Desktop Table View */}
+          <div className="table-container desktop-only animate-fade-in">
+            <table>
+              <thead>
+                <tr>
+                  <th style={{ width: '40px' }}>
+                    <div className="checkbox-wrapper" onClick={toggleSelectAll}>
+                      {selectedLeads.length === leads.length && leads.length > 0 ? (
+                        <CheckSquare size={18} className="checkbox-icon checked" />
+                      ) : (
+                        <Square size={18} className="checkbox-icon" />
+                      )}
+                    </div>
+                  </th>
+                  <th onClick={() => toggleSort('business_name')} className="sortable" style={{ width: '25%' }}>
+                    Business <SortIcon field="business_name" />
+                  </th>
+                  <th onClick={() => toggleSort('priority')} className="sortable">
+                    Priority <SortIcon field="priority" />
+                  </th>
+                  <th>Contact</th>
+                  <th onClick={() => toggleSort('rating')} className="sortable">
+                    Rating <SortIcon field="rating" />
+                  </th>
+                  <th style={{ width: '50px', textAlign: 'center' }}>Web</th>
+                  <th>Stage</th>
+                  <th onClick={() => toggleSort('created_at')} className="sortable">
+                    Added <SortIcon field="created_at" />
+                  </th>
+                  <th style={{ textAlign: 'center' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleLeads.map(lead => {
+                  const stage = STAGES.find(s => s.id === lead.stage)
+                  const priority = PRIORITIES.find(p => p.id === lead.priority)
+                  const isSelected = selectedLeads.includes(lead.id)
+                  return (
+                    <tr key={lead.id} className={isSelected ? 'row-selected' : ''}>
+                      <td>
+                        <div className="checkbox-wrapper" onClick={() => toggleSelectLead(lead.id)}>
+                          {isSelected ? (
+                            <CheckSquare size={18} className="checkbox-icon checked" />
+                          ) : (
+                            <Square size={18} className="checkbox-icon" />
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="cell-stack">
+                          <Link to={`/leads/${lead.id}`} className="lead-link">
+                            {lead.business_name}
+                          </Link>
+                          <div className="lead-meta">
+                            <span className="cell-subtitle">{lead.business_type}</span>
+                            {lead.address && (
+                              <span className="location-hint">
+                                • {lead.address.split(',').slice(-3, -2)[0]?.trim() || lead.address.split(',').slice(0, 1)[0]}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        {priority ? (
+                          <span className="priority-pill" style={{ '--p-color': priority.color }}>
+                            {priority.label}
+                          </span>
+                        ) : (
+                          <span className="no-data">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="cell-stack">
+                          {lead.phone ? (
+                            <a href={`tel:${lead.phone}`} className="contact-link" title={lead.phone}>
+                              <Phone size={12} />
+                              {lead.phone}
+                            </a>
+                          ) : (
+                            <span className="no-data">No phone</span>
+                          )}
+                          {lead.email ? (
+                            <a href={`mailto:${lead.email}`} className="contact-link" title={lead.email}>
+                              <Mail size={12} />
+                              <span className="truncate-email">{lead.email}</span>
+                            </a>
+                          ) : (
+                            <span className="no-data">No email</span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        {lead.rating > 0 ? (
+                          <div className="rating-display">
+                            <Star size={13} fill="#f59e0b" stroke="#f59e0b" />
+                            <span>{lead.rating}</span>
+                            {lead.review_count > 0 && (
+                              <span className="rating-count">({lead.review_count})</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="no-data">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                          {lead.website ? (
+                            <a
+                              href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="web-icon-link"
+                              title={lead.website}
+                            >
+                              <Globe size={16} />
+                            </a>
+                          ) : (
+                            <div className="no-data-icon"><Globe size={16} style={{ opacity: 0.2 }} /></div>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <span
+                          className="badge"
+                          style={{ background: `${stage?.color}15`, color: stage?.color }}
+                        >
+                          <div className="status-dot" style={{ background: stage?.color }} />
+                          {stage?.label}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="date-text">
+                          {format(new Date(lead.created_at), 'MMM d, yyyy')}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="actions-cell">
+                          <Link to={`/leads/${lead.id}`} className="btn btn-ghost btn-sm btn-view">
+                            View
+                          </Link>
+                          {lead.google_maps_url && (
+                            <a
+                              href={lead.google_maps_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-ghost btn-icon btn-sm"
+                              title="Open in Maps"
+                            >
+                              <ExternalLink size={13} />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="leads-cards mobile-only animate-fade-in">
+            {visibleLeads.map(lead => {
+              const stage = STAGES.find(s => s.id === lead.stage)
+              const priority = PRIORITIES.find(p => p.id === lead.priority)
+              const isSelected = selectedLeads.includes(lead.id)
+
+              return (
+                <div key={lead.id} className={`lead-card ${isSelected ? 'row-selected' : ''}`}>
+                  <div className="card-top">
+                    <div className="checkbox-wrapper" onClick={() => toggleSelectLead(lead.id)}>
+                      {isSelected ? <CheckSquare size={18} className="checkbox-icon checked" /> : <Square size={18} className="checkbox-icon" />}
+                    </div>
+                    <Link to={`/leads/${lead.id}`} className="lead-name-link">
+                      {lead.business_name}
+                    </Link>
+                    {priority && (
+                      <span className="priority-dot" style={{ background: priority.color }} title={priority.label}></span>
                     )}
                   </div>
-                </th>
-                <th onClick={() => toggleSort('business_name')} className="sortable" style={{ width: '25%' }}>
-                  Business <SortIcon field="business_name" />
-                </th>
-                <th onClick={() => toggleSort('priority')} className="sortable">
-                  Priority <SortIcon field="priority" />
-                </th>
-                <th>Contact</th>
-                <th onClick={() => toggleSort('rating')} className="sortable">
-                  Rating <SortIcon field="rating" />
-                </th>
-                <th style={{ width: '50px', textAlign: 'center' }}>Web</th>
-                <th>Stage</th>
-                <th onClick={() => toggleSort('created_at')} className="sortable">
-                  Added <SortIcon field="created_at" />
-                </th>
-                <th style={{ textAlign: 'center' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleLeads.map(lead => {
-                const stage = STAGES.find(s => s.id === lead.stage)
-                const priority = PRIORITIES.find(p => p.id === lead.priority)
-                const isSelected = selectedLeads.includes(lead.id)
-                return (
-                  <tr key={lead.id} className={isSelected ? 'row-selected' : ''}>
-                    <td>
-                      <div className="checkbox-wrapper" onClick={() => toggleSelectLead(lead.id)}>
-                        {isSelected ? (
-                          <CheckSquare size={18} className="checkbox-icon checked" />
-                        ) : (
-                          <Square size={18} className="checkbox-icon" />
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="cell-stack">
-                        <Link to={`/leads/${lead.id}`} className="lead-link">
-                          {lead.business_name}
-                        </Link>
-                        <div className="lead-meta">
-                          <span className="cell-subtitle">{lead.business_type}</span>
-                          {lead.address && (
-                            <span className="location-hint">
-                              • {lead.address.split(',').slice(-3, -2)[0]?.trim() || lead.address.split(',').slice(0, 1)[0]}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      {priority ? (
-                        <span className="priority-pill" style={{ '--p-color': priority.color }}>
-                          {priority.label}
-                        </span>
-                      ) : (
-                        <span className="no-data">—</span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="cell-stack">
-                        {lead.phone ? (
-                          <a href={`tel:${lead.phone}`} className="contact-link" title={lead.phone}>
-                            <Phone size={12} />
-                            {lead.phone}
-                          </a>
-                        ) : (
-                          <span className="no-data">No phone</span>
-                        )}
-                        {lead.email ? (
-                          <a href={`mailto:${lead.email}`} className="contact-link" title={lead.email}>
-                            <Mail size={12} />
-                            <span className="truncate-email">{lead.email}</span>
-                          </a>
-                        ) : (
-                          <span className="no-data">No email</span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      {lead.rating > 0 ? (
-                        <div className="rating-display">
-                          <Star size={13} fill="#f59e0b" stroke="#f59e0b" />
+
+                  <div className="card-details">
+                    <div className="detail-item">
+                      <span className="detail-label">{lead.business_type || 'Business Type'}</span>
+                      {lead.rating > 0 && (
+                        <div className="card-rating">
+                          <Star size={12} fill="#f59e0b" stroke="#f59e0b" />
                           <span>{lead.rating}</span>
-                          {lead.review_count > 0 && (
-                            <span className="rating-count">({lead.review_count})</span>
-                          )}
                         </div>
-                      ) : (
-                        <span className="no-data">—</span>
                       )}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', justifyContent: 'center' }}>
-                        {lead.website ? (
-                          <a
-                            href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="web-icon-link"
-                            title={lead.website}
-                          >
-                            <Globe size={16} />
-                          </a>
-                        ) : (
-                          <div className="no-data-icon"><Globe size={16} style={{ opacity: 0.2 }} /></div>
-                        )}
+                    </div>
+
+                    <div className="card-contact">
+                      <Link to={`/leads/${lead.id}/call-mode`} className="card-contact-btn" title="Log Call">
+                        <Phone size={14} />
+                      </Link>
+                      {lead.website && (
+                        <a href={lead.website} target="_blank" rel="noopener noreferrer" className="card-contact-btn">
+                          <Globe size={14} />
+                        </a>
+                      )}
+                      <div className="card-badges">
+                        <span className="card-badge-status" style={{ background: `${stage?.color}15`, color: stage?.color }}>
+                          {stage?.label}
+                        </span>
                       </div>
-                    </td>
-                    <td>
-                      <span
-                        className="badge"
-                        style={{ background: `${stage?.color}15`, color: stage?.color }}
-                      >
-                        <div className="status-dot" style={{ background: stage?.color }} />
-                        {stage?.label}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="date-text">
-                        {format(new Date(lead.created_at), 'MMM d, yyyy')}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="actions-cell">
-                        <Link to={`/leads/${lead.id}`} className="btn btn-ghost btn-sm btn-view">
-                          View
-                        </Link>
-                        {lead.google_maps_url && (
-                          <a
-                            href={lead.google_maps_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-ghost btn-icon btn-sm"
-                            title="Open in Maps"
-                          >
-                            <ExternalLink size={13} />
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                    </div>
+                  </div>
+
+                  <Link to={`/leads/${lead.id}`} className="card-footer-btn">
+                    View Details
+                  </Link>
+                </div>
+              )
+            })}
+          </div>
 
           {leads.length > itemsToShow && (
             <div className="load-more-section">
@@ -953,10 +1012,9 @@ function Leads() {
               </button>
             </div>
           )}
-        </div>
+        </>
       )}
 
-      {/* Bulk Actions Bar */}
       <div className={`bulk-actions-bar ${selectedLeads.length > 0 ? 'visible' : ''}`}>
         <div className="bulk-info">
           <span className="selection-count">{selectedLeads.length}</span>
@@ -995,33 +1053,33 @@ function Leads() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="modal-backdrop" onClick={() => setShowDeleteModal(false)}>
-          <div className="modal-content delete-modal animate-pop-in" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="delete-icon-wrapper">
-                <Trash2 size={24} />
+      {
+        showDeleteModal && (
+          <div className="modal-backdrop" onClick={() => setShowDeleteModal(false)}>
+            <div className="modal-content delete-modal animate-pop-in" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <div className="delete-icon-wrapper">
+                  <Trash2 size={24} />
+                </div>
+                <h3>Delete Leads?</h3>
+                <button className="btn-close" onClick={() => setShowDeleteModal(false)}>&times;</button>
               </div>
-              <h3>Delete Leads?</h3>
-              <button className="btn-close" onClick={() => setShowDeleteModal(false)}>&times;</button>
-            </div>
-            <div className="modal-body">
-              <p>Are you sure you want to delete <strong>{selectedLeads.length}</strong> leads? This action cannot be undone.</p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setShowDeleteModal(false)}>
-                Cancel
-              </button>
-              <button className="btn btn-danger" onClick={confirmBulkDelete}>
-                Delete Permanently
-              </button>
+              <div className="modal-body">
+                <p>Are you sure you want to delete <strong>{selectedLeads.length}</strong> leads? This action cannot be undone.</p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-ghost" onClick={() => setShowDeleteModal(false)}>
+                  Cancel
+                </button>
+                <button className="btn btn-danger" onClick={confirmBulkDelete}>
+                  Delete Permanently
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
-      {/* Back to Top Widget */}
       <button
         className={`back-to-top ${showScrollTop ? 'visible' : ''}`}
         onClick={scrollToTop}
@@ -1164,12 +1222,23 @@ function Leads() {
         .collapsible-filters {
           display: grid;
           grid-template-rows: 0fr;
-          transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          opacity: 0;
+          visibility: hidden;
+          transition: 
+            grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 0.3s ease,
+            visibility 0s 0.3s;
           overflow: hidden;
         }
 
         .filters-expanded .collapsible-filters {
           grid-template-rows: 1fr;
+          opacity: 1;
+          visibility: visible;
+          transition: 
+            grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 0.3s ease,
+            visibility 0s;
         }
 
         .filters-grid {
@@ -1980,8 +2049,138 @@ function Leads() {
           border-radius: 50%;
           box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
         }
+        @media (max-width: 768px) {
+          .desktop-only { display: none !important; }
+          .mobile-only { display: block !important; }
+          .hide-mobile { display: none; }
+          
+          .leads-page { padding: 16px; }
+          .page-header { margin-bottom: 20px; flex-direction: column; align-items: flex-start; gap: 16px; }
+          
+          .filters-container { margin-bottom: 16px; }
+          .search-wrapper-v2 { padding: 0 12px; }
+          .filters-grid { grid-template-columns: 1fr; gap: 12px; padding: 12px; }
+          
+          /* Mobile cards */
+          .leads-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+          }
+          
+          .lead-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
+          
+          .card-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+          
+          .lead-name-link {
+            flex: 1;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 16px;
+          }
+          
+          .priority-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+          }
+          
+          .card-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+          }
+          
+          .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          
+          .detail-label {
+            font-size: 13px;
+            color: var(--text-tertiary);
+          }
+          
+          .card-rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+          }
+          
+          .card-contact {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-subtle);
+          }
+          
+          .card-contact-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            text-decoration: none;
+          }
+          
+          .card-badges {
+            margin-left: auto;
+          }
+          
+          .card-badge-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+          }
+          
+          .card-footer-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            background: var(--accent-subtle);
+            color: var(--accent);
+            text-decoration: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 4px;
+          }
+          
+          .bulk-actions-bar {
+            width: calc(100% - 32px);
+            bottom: 16px;
+            gap: 16px;
+            padding: 8px 8px 8px 16px;
+          }
+          
+          .bulk-info { gap: 12px; }
+          .selection-label { display: none; }
+        }
+
+        .mobile-only { display: none; }
       `}</style>
-    </div>
+    </div >
   )
 }
 

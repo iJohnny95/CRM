@@ -27,9 +27,10 @@ const dashboardStyles = `
         }
     }
     
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
         .stats-grid {
             grid-template-columns: 1fr;
+            gap: 12px;
         }
     }
     
@@ -188,9 +189,10 @@ const dashboardStyles = `
         }
     }
     
-    @media (max-width: 500px) {
+    @media (max-width: 480px) {
         .quick-stats {
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
+            gap: 12px;
         }
     }
     
@@ -709,6 +711,26 @@ const CalendarPage = () => {
                     </button>
                 </div>
             </header>
+
+            <style>{`
+                @media (max-width: 768px) {
+                    .calendar-page-v2 {
+                        overflow-x: hidden;
+                    }
+                    .page-header {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 16px;
+                    }
+                    .page-header-actions {
+                        width: 100%;
+                    }
+                    .page-header-actions button {
+                        width: 100%;
+                        justify-content: center;
+                    }
+                }
+            `}</style>
 
             {/* Stats Grid - matching Dashboard style */}
             <section className="stats-section animate-fade-in" style={{ marginBottom: 'var(--gap-lg)' }}>

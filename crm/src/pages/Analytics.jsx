@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     AreaChart, Area, PieChart, Pie, Cell, Legend, LineChart, Line,
@@ -120,6 +120,12 @@ function CustomTooltip({ active, payload, label, currency = false }) {
 function Analytics() {
     const [timeframe, setTimeframe] = useState(30)
     const analytics = useStore(state => state.getAnalyticsData(timeframe))
+    const [isMounted, setIsMounted] = useState(false)
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsMounted(true), 200)
+        return () => clearTimeout(timer)
+    }, [])
 
     const formatCurrency = (val) => new Intl.NumberFormat('en-IE', {
         style: 'currency',
@@ -202,134 +208,148 @@ function Analytics() {
                 {/* First Row Block: Revenue(3-2) + Small Charts (1-1 stack) */}
                 <GlassCard title="Revenue Trajectory" icon={TrendingUp} className="span-3-2">
                     <div className="chart-container-large">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={analytics.revenueTrend}>
-                                <defs>
-                                    <linearGradient id="colorWon" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor={COLORS.success} stopOpacity={0} />
-                                    </linearGradient>
-                                    <linearGradient id="colorPipe" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }} />
-                                <YAxis
-                                    axisLine={false} tickLine={false}
-                                    tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
-                                    tickFormatter={(val) => `€${val >= 1000 ? val / 1000 + 'k' : val}`}
-                                />
-                                <Tooltip content={<CustomTooltip currency={true} />} />
-                                <Area type="monotone" dataKey="won" stroke={COLORS.success} strokeWidth={3} fill="url(#colorWon)" name="Won" />
-                                <Area type="monotone" dataKey="pipeline" stroke={COLORS.primary} strokeWidth={3} fill="url(#colorPipe)" name="Pipeline" />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                        {isMounted && (
+                            <ResponsiveContainer width="100%" height="100%" debounce={100}>
+                                <AreaChart data={analytics.revenueTrend}>
+                                    <defs>
+                                        <linearGradient id="colorWon" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor={COLORS.success} stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorPipe" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }} />
+                                    <YAxis
+                                        axisLine={false} tickLine={false}
+                                        tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }}
+                                        tickFormatter={(val) => `€${val >= 1000 ? val / 1000 + 'k' : val}`}
+                                    />
+                                    <Tooltip content={<CustomTooltip currency={true} />} />
+                                    <Area type="monotone" dataKey="won" stroke={COLORS.success} strokeWidth={3} fill="url(#colorWon)" name="Won" />
+                                    <Area type="monotone" dataKey="pipeline" stroke={COLORS.primary} strokeWidth={3} fill="url(#colorPipe)" name="Pipeline" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </GlassCard>
 
                 {/* Small Column Stack */}
                 <GlassCard title="Win/Loss Analysis" icon={BarIcon} className="span-1-1">
                     <div className="chart-container-vsmall">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={analytics.outcomesTrend}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
-                                <XAxis dataKey="date" hide />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-hover)' }} />
-                                <Bar dataKey="won" fill={COLORS.success} stackId="a" radius={[0, 0, 0, 0]} name="Won" />
-                                <Bar dataKey="lost" fill={COLORS.danger} stackId="a" radius={[4, 4, 0, 0]} name="Lost" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {isMounted && (
+                            <ResponsiveContainer width="100%" height="100%" debounce={100}>
+                                <BarChart data={analytics.outcomesTrend}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
+                                    <XAxis dataKey="date" hide />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-hover)' }} />
+                                    <Bar dataKey="won" fill={COLORS.success} stackId="a" radius={[0, 0, 0, 0]} name="Won" />
+                                    <Bar dataKey="lost" fill={COLORS.danger} stackId="a" radius={[4, 4, 0, 0]} name="Lost" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </GlassCard>
 
                 <GlassCard title="Lead Velocity" icon={Zap} className="span-1-1">
                     <div className="chart-container-vsmall">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={analytics.stageVelocity}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
-                                <XAxis dataKey="stage" hide />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Line type="monotone" dataKey="days" stroke={COLORS.purple} strokeWidth={3} dot={{ r: 4, fill: COLORS.purple }} polyline="" name="Avg. Days" />
-                            </LineChart>
-                        </ResponsiveContainer>
+                        {isMounted && (
+                            <ResponsiveContainer width="100%" height="100%" debounce={100}>
+                                <LineChart data={analytics.stageVelocity}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
+                                    <XAxis dataKey="stage" hide />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Line type="monotone" dataKey="days" stroke={COLORS.purple} strokeWidth={3} dot={{ r: 4, fill: COLORS.purple }} name="Avg. Days" />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </GlassCard>
 
                 {/* Second Row Block: Industry Performance(2-2) + Funnel/Split (1-2 each) */}
                 <GlassCard title="Industry Performance" icon={Layout} className="span-2-2">
                     <div className="chart-container-large">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart layout="vertical" data={analytics.industryPerformance} margin={{ left: 10, right: 30, top: 40, bottom: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--chart-grid)" />
-                                <XAxis xAxisId="left" type="number" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} />
-                                <XAxis xAxisId="right" orientation="top" type="number" axisLine={false} tickLine={false} unit="%" tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} />
-                                <YAxis
-                                    dataKey="name"
-                                    type="category"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
-                                    width={120}
-                                    tickFormatter={(val) => val.length > 25 ? val.substring(0, 22) + '...' : val}
-                                />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Legend verticalAlign="top" align="right" iconType="circle" />
-                                <Bar xAxisId="left" dataKey="leads" fill={COLORS.primary} radius={[0, 4, 4, 0]} name="Leads" barSize={15} />
-                                <Line xAxisId="right" type="monotone" dataKey="conversion" stroke={COLORS.success} strokeWidth={3} name="Conv %" dot={{ r: 4, fill: COLORS.success }} />
-                            </ComposedChart>
-                        </ResponsiveContainer>
+                        {isMounted && (
+                            <ResponsiveContainer width="100%" height="100%" debounce={100}>
+                                <ComposedChart layout="vertical" data={analytics.industryPerformance} margin={{ left: 10, right: 30, top: 40, bottom: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--chart-grid)" />
+                                    <XAxis xAxisId="left" type="number" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} />
+                                    <XAxis xAxisId="right" orientation="top" type="number" axisLine={false} tickLine={false} unit="%" tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} />
+                                    <YAxis
+                                        dataKey="name"
+                                        type="category"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: 'var(--text-primary)', fontSize: 11 }}
+                                        width={120}
+                                        tickFormatter={(val) => val.length > 25 ? val.substring(0, 22) + '...' : val}
+                                    />
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Legend verticalAlign="top" align="right" iconType="circle" />
+                                    <Bar xAxisId="left" dataKey="leads" fill={COLORS.primary} radius={[0, 4, 4, 0]} name="Leads" barSize={15} />
+                                    <Line xAxisId="right" type="monotone" dataKey="conversion" stroke={COLORS.success} strokeWidth={3} name="Conv %" dot={{ r: 4, fill: COLORS.success }} />
+                                </ComposedChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </GlassCard>
 
                 <GlassCard title="Operational Funnel" icon={Filter} className="span-1-2">
                     <div className="chart-container-large">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={analytics.stageData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                    animationDuration={1500}
-                                >
-                                    {analytics.stageData.map((entry, index) => <Cell key={index} fill={entry.color} stroke="none" />)}
-                                </Pie>
-                                <Tooltip content={<CustomTooltip />} />
-                                <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" formatter={(v) => <span className="legend-text">{v}</span>} />
-                            </PieChart>
-                        </ResponsiveContainer>
+                        {isMounted && (
+                            <ResponsiveContainer width="100%" height="100%" debounce={100}>
+                                <PieChart>
+                                    <Pie
+                                        data={analytics.stageData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        animationDuration={1500}
+                                    >
+                                        {analytics.stageData.map((entry, index) => <Cell key={index} fill={entry.color} stroke="none" />)}
+                                    </Pie>
+                                    <Tooltip content={<CustomTooltip />} />
+                                    <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" formatter={(v) => <span className="legend-text">{v}</span>} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </GlassCard>
 
                 <GlassCard title="Industry Split" icon={Layout} className="span-1-2">
                     <div className="chart-container-large">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={analytics.industryData} layout="vertical">
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} width={90} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-hover)' }} />
-                                <Bar dataKey="value" fill={COLORS.pink} radius={[0, 4, 4, 0]} barSize={10} name="Leads" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {isMounted && (
+                            <ResponsiveContainer width="100%" height="100%" debounce={100}>
+                                <BarChart data={analytics.industryData} layout="vertical">
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} width={90} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-hover)' }} />
+                                    <Bar dataKey="value" fill={COLORS.pink} radius={[0, 4, 4, 0]} barSize={10} name="Leads" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </GlassCard>
 
                 {/* Bottom Block: Acquisition Trend (4x2) */}
                 <GlassCard title="Acquisition Trend" icon={Activity} className="span-4-2">
                     <div className="chart-container-large">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={analytics.leadsTrend}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
-                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }} interval={timeframe > 30 ? 60 : timeframe > 7 ? 6 : 0} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-hover)' }} />
-                                <Bar dataKey="leads" fill={COLORS.secondary} radius={[4, 4, 0, 0]} barSize={20} name="Leads" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {isMounted && (
+                            <ResponsiveContainer width="100%" height="100%" debounce={100}>
+                                <BarChart data={analytics.leadsTrend}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
+                                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 12 }} interval={timeframe > 30 ? 60 : timeframe > 7 ? 6 : 0} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-hover)' }} />
+                                    <Bar dataKey="leads" fill={COLORS.secondary} radius={[4, 4, 0, 0]} barSize={20} name="Leads" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </GlassCard>
             </motion.div>
@@ -563,8 +583,18 @@ function Analytics() {
         }
 
         /* Chart Containers */
-        .chart-container-large { height: 400px; }
-        .chart-container-vsmall { height: 180px; }
+        .chart-container-large { 
+          height: 400px; 
+          width: 100%;
+          min-width: 0;
+          position: relative;
+        }
+        .chart-container-vsmall { 
+          height: 180px; 
+          width: 100%;
+          min-width: 0;
+          position: relative;
+        }
 
         .legend-text {
           font-size: 11px;

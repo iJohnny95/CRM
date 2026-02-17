@@ -712,6 +712,24 @@ function Automations() {
         @media (max-width: 1000px) {
           .automations-layout {
             grid-template-columns: 1fr;
+            gap: 16px;
+          }
+        }
+        
+        @media (max-width: 600px) {
+          .automations-page {
+            padding: 16px;
+            overflow-x: hidden;
+          }
+          .form-row {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          .config-panel {
+            padding: 16px;
+          }
+          .btn-lg {
+            width: 100%;
           }
         }
         
@@ -763,6 +781,12 @@ function Automations() {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: var(--gap-lg);
+        }
+        
+        @media (max-width: 480px) {
+          .form-row {
+            grid-template-columns: 1fr;
+          }
         }
         
         .form-toggles {
@@ -1268,6 +1292,8 @@ function Automations() {
           padding: 20px;
           font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
           background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent 400px);
+          white-space: pre-wrap;
+          word-break: break-word;
         }
 
         .logs-container {

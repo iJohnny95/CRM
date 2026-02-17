@@ -400,6 +400,36 @@ function Dashboard() {
       <style>{`
         .dashboard {
           max-width: 100%;
+          padding: var(--page-padding);
+        }
+        
+        @media (max-width: 768px) {
+          .dashboard {
+             padding: 16px;
+             overflow-x: hidden;
+          }
+          
+          .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+          
+          .page-header-actions {
+            width: 100%;
+          }
+          
+          .page-header-actions .btn {
+            width: 100%;
+          }
+
+          .page-header h1 {
+            font-size: 24px;
+          }
+          
+          .page-header p {
+            font-size: 13px;
+          }
         }
         
         .stats-section {
@@ -418,9 +448,10 @@ function Dashboard() {
           }
         }
         
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
           .stats-grid {
             grid-template-columns: 1fr;
+            gap: 12px;
           }
         }
         
@@ -582,9 +613,14 @@ function Dashboard() {
           }
         }
         
-        @media (max-width: 500px) {
+        @media (max-width: 480px) {
           .quick-stats {
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+          
+          .quick-stat {
+            padding: 12px;
           }
         }
         
@@ -644,7 +680,7 @@ function Dashboard() {
         
         .dashboard-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1.5fr 1fr;
           gap: var(--gap-xl);
           margin-bottom: var(--gap-xl);
         }
@@ -659,10 +695,19 @@ function Dashboard() {
           }
         }
         
-        @media (max-width: 800px) {
+        @media (max-width: 1024px) {
+          .dashboard-grid {
+            grid-template-columns: 1fr;
+            gap: var(--gap-lg);
+          }
+        }
+
+        @media (max-width: 768px) {
           .dashboard-grid,
           .dashboard-grid.second-row {
             grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
           }
         }
         
@@ -687,6 +732,21 @@ function Dashboard() {
           padding-right: 8px;
           margin-left: -8px;
           margin-right: -8px;
+        }
+        
+        @media (max-width: 768px) {
+          .pipeline-row:hover {
+            margin-left: 0;
+            margin-right: 0;
+            padding-left: 0;
+            padding-right: 0;
+          }
+          .pipeline-info {
+            width: 100px;
+          }
+          .pipeline-bar-container {
+            margin: 0 4px;
+          }
         }
         
         .pipeline-info {
@@ -759,6 +819,15 @@ function Dashboard() {
           background: var(--bg-tertiary);
           box-shadow: inset 3px 0 0 var(--accent);
           padding-left: 14px;
+        }
+
+        @media (max-width: 768px) {
+          .lead-row {
+            margin: 0;
+          }
+          .lead-row:hover {
+            padding-left: 8px;
+          }
         }
         
         .lead-info {
@@ -1010,6 +1079,25 @@ function Dashboard() {
           font-size: 11px;
           color: var(--text-muted);
           margin-top: 2px;
+        }
+
+        @media (max-width: 600px) {
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .card {
+            padding: 16px;
+            overflow: hidden;
+          }
+          .pipeline-info {
+            width: 80px;
+          }
+          .pipeline-row {
+            gap: 8px;
+          }
         }
         
         /* Empty states */

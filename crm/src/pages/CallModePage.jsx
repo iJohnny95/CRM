@@ -114,6 +114,7 @@ export default function CallModePage() {
     const [draggedScript, setDraggedScript] = useState(null)
     const [followupDate, setFollowupDate] = useState('')
     const [followupTime, setFollowupTime] = useState('')
+    const [activeMobileTab, setActiveMobileTab] = useState('script') // 'script', 'objections', 'outcome'
 
     // Timer
     useEffect(() => {
@@ -209,9 +210,6 @@ export default function CallModePage() {
             ]
         }
         addScript(newScript)
-        // The store action should automatically set it as active if it's the first, 
-        // but if not we might want to switch to it. 
-        // For now user can switch manually.
     }
 
     const handleSaveScriptConfig = () => {
@@ -252,7 +250,6 @@ export default function CallModePage() {
     const handleDragStart = (e, script) => {
         setDraggedScript(script)
         e.dataTransfer.effectAllowed = 'move'
-        // e.target.style.opacity = '0.5' // Optional visual feedback
     }
 
     const handleDragOver = (e, targetScript) => {
@@ -265,7 +262,6 @@ export default function CallModePage() {
 
         if (draggedIndex === -1 || targetIndex === -1) return
 
-        // Swap directly in store for live feedback
         const newScripts = [...currentScripts]
         newScripts.splice(draggedIndex, 1)
         newScripts.splice(targetIndex, 0, draggedScript)
@@ -295,11 +291,11 @@ export default function CallModePage() {
                 <div className="header-left">
                     <Link to={`/leads/${id}`} className="back-link">
                         <ArrowLeft size={18} />
-                        Back to Lead
+                        <span className="desktop-only">Back to Lead</span>
                     </Link>
                     <div className="lead-info">
                         <h2>{lead.business_name}</h2>
-                        {lead.contact_name && <span className="contact-name">{lead.contact_name}</span>}
+                        {lead.contact_name && <span className="contact-name desktop-only">{lead.contact_name}</span>}
                     </div>
                 </div>
                 <div className="header-timer">
@@ -310,9 +306,34 @@ export default function CallModePage() {
                 </div>
             </header>
 
+            {/* Mobile Tab Navigation */}
+            <nav className="mobile-tabs mobile-only">
+                <button
+                    className={`mobile-tab-btn ${activeMobileTab === 'script' ? 'active' : ''}`}
+                    onClick={() => setActiveMobileTab('script')}
+                >
+                    <FileText size={20} />
+                    <span>Script</span>
+                </button>
+                <button
+                    className={`mobile-tab-btn ${activeMobileTab === 'objections' ? 'active' : ''}`}
+                    onClick={() => setActiveMobileTab('objections')}
+                >
+                    <MessageSquare size={20} />
+                    <span>Objections</span>
+                </button>
+                <button
+                    className={`mobile-tab-btn ${activeMobileTab === 'outcome' ? 'active' : ''}`}
+                    onClick={() => setActiveMobileTab('outcome')}
+                >
+                    <Check size={20} />
+                    <span>Outcome</span>
+                </button>
+            </nav>
+
             <div className="call-page-layout">
                 {/* Left Sidebar: Settings & Stats */}
-                <aside className="call-sidebar-left">
+                <aside className={`call-sidebar-left desktop-only`}>
                     <div className="card sidebar-card script-selector-card">
                         <div className="card-header">
                             <h4><FileText size={16} /> Scripts</h4>
@@ -412,22 +433,24 @@ export default function CallModePage() {
                 </aside>
 
                 {/* Center: Script */}
-                <main className="call-main">
+                <main className={`call-main ${activeMobileTab !== 'script' ? 'hide-mobile' : ''}`}>
                     <div className="card script-card">
                         {isScriptEditing && editedScript ? (
                             <div className="script-editor">
                                 <div className="variables-toolbar">
                                     <span className="text-xs font-bold text-secondary uppercase mr-2">Inserir:</span>
-                                    {SCRIPT_VARIABLES.map(v => (
-                                        <button
-                                            key={v.value}
-                                            className="badge badge-outline cursor-pointer hover:bg-slate-100"
-                                            onClick={() => handleInsertVariable(v.value)}
-                                            onMouseDown={(e) => e.preventDefault()} // Prevent losing focus
-                                        >
-                                            {v.label}
-                                        </button>
-                                    ))}
+                                    <div className="toolbar-chips">
+                                        {SCRIPT_VARIABLES.map(v => (
+                                            <button
+                                                key={v.value}
+                                                className="badge badge-outline cursor-pointer hover:bg-slate-100"
+                                                onClick={() => handleInsertVariable(v.value)}
+                                                onMouseDown={(e) => e.preventDefault()}
+                                            >
+                                                {v.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div className="form-group">
                                     <label>Script Name</label>
@@ -475,7 +498,6 @@ export default function CallModePage() {
                             <div className="script-viewer">
                                 <div className="script-header">
                                     <h3>{activeScript?.name}</h3>
-                                    {/* Replace variables could go here */}
                                 </div>
                                 <div className="script-steps-list">
                                     {activeScript?.steps.map((step, idx) => (
@@ -504,14 +526,15 @@ export default function CallModePage() {
                 </main>
 
                 {/* Right: Objections & Outcome */}
-                <aside className="call-sidebar-right">
-                    <div className="card sidebar-card objections-card">
+                <aside className={`call-sidebar-right ${activeMobileTab === 'script' ? 'hide-mobile' : ''}`}>
+                    {/* Common Objections Section */}
+                    <div className={`card sidebar-card objections-card ${activeMobileTab !== 'objections' && activeMobileTab !== 'script' ? 'hide-mobile' : ''}`}>
                         <h4>Common Objections</h4>
                         <div className="objection-list">
                             {DEFAULT_OBJECTIONS.map(obj => (
                                 <div key={obj.id} className="objection-item">
                                     <details>
-                                        <summary>{obj.label}</summary>
+                                        <summary>{obj.label} <ChevronDown size={14} /></summary>
                                         <p>{obj.response}</p>
                                     </details>
                                 </div>
@@ -519,7 +542,8 @@ export default function CallModePage() {
                         </div>
                     </div>
 
-                    <div className="card sidebar-card outcome-card">
+                    {/* Outcome Section */}
+                    <div className={`card sidebar-card outcome-card ${activeMobileTab !== 'outcome' && activeMobileTab !== 'script' ? 'hide-mobile' : ''}`}>
                         <h4>Call Outcome</h4>
                         <div className="form-group">
                             <label>Result</label>
@@ -563,17 +587,25 @@ export default function CallModePage() {
                             <label>Observations</label>
                             <textarea
                                 className="input textarea"
-                                rows={4}
+                                rows={window.innerWidth < 768 ? 6 : 4}
                                 placeholder="Notas da chamada..."
                                 value={callObservation}
                                 onChange={(e) => setCallObservation(e.target.value)}
                             />
                         </div>
-                        <button className="btn btn-primary full-width" onClick={handleSaveCall}>
+                        <button className="btn btn-primary full-width desktop-only" onClick={handleSaveCall}>
                             <Save size={16} /> Save & Finish
                         </button>
                     </div>
                 </aside>
+            </div>
+
+            {/* Mobile Sticky Save Button */}
+            <div className="mobile-action-bar mobile-only">
+                <button className="btn btn-primary full-width" onClick={handleSaveCall}>
+                    <Save size={20} />
+                    <span>Save Call & Exit</span>
+                </button>
             </div>
         </div>
     )
