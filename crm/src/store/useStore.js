@@ -215,6 +215,27 @@ const useStore = create((set, get) => ({
         set({ _authListener: subscription, _authInitializing: false })
     },
 
+    // Refresh user profile from database
+    refreshProfile: async () => {
+        const { user } = get()
+        if (!user) return
+
+        try {
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single()
+
+            if (error) throw error
+            if (profile) {
+                set({ profile })
+            }
+        } catch (err) {
+            console.error('Error refreshing profile:', err)
+        }
+    },
+
     // Fetch initial data from Supabase
     fetchInitialData: async () => {
         const { user, profile, initialized, isLoading } = get()

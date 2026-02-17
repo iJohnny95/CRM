@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Lock, ShieldCheck, AlertCircle, Loader2, User } from 'lucide-react'
+import useStore from '../../store/useStore'
 
 function ChangePassword() {
+  const refreshProfile = useStore(state => state.refreshProfile)
   const [fullName, setFullName] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -33,18 +35,31 @@ function ChangePassword() {
     setError(null)
 
     try {
-      // Update password and metadata (full_name and clearing the flag)
+      // 1. Update password and metadata (full_name) in Auth
       const { error: updateError } = await supabase.auth.updateUser({
         password: password,
         data: {
-          full_name: fullName,
-          needs_password_change: false
+          full_name: fullName
         }
       })
 
       if (updateError) throw updateError
 
-      // Success! Redirect to dashboard
+      // 2. Update the profile record (needs_pw_change = false)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          needs_pw_change: false,
+          full_name: fullName
+        })
+        .eq('id', (await supabase.auth.getUser()).data.user.id)
+
+      if (profileError) throw profileError
+
+      // 3. Refresh store profile
+      await refreshProfile()
+
+      // 4. Success! Redirect to dashboard
       navigate('/')
     } catch (err) {
       setError(err.message)
