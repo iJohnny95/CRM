@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase.js'
 
 // Pipeline stages configuration
 export const STAGES = [
