@@ -24,6 +24,19 @@ function ProtectedRoute() {
         return <Navigate to="/login" replace />
     }
 
+    // Check if user needs to change their password
+    const needsPasswordChange = user.user_metadata?.needs_password_change === true
+
+    // If they need to change it and aren't on the change page, redirect them
+    if (needsPasswordChange && window.location.pathname !== '/change-password') {
+        return <Navigate to="/change-password" replace />
+    }
+
+    // If they DON'T need to change it but are trying to access the change page, redirect to dashboard
+    if (!needsPasswordChange && window.location.pathname === '/change-password') {
+        return <Navigate to="/" replace />
+    }
+
     return <Outlet />
 }
 

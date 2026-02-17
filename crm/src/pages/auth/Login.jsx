@@ -4,90 +4,86 @@ import { supabase } from '../../lib/supabase'
 import { LogIn, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react'
 
 function Login() {
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(null)
-    const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
-    const handleLogin = async (e) => {
-        e.preventDefault()
-        setLoading(true)
-        setError(null)
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
 
-        try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-            if (error) throw error
-            navigate('/')
-        } catch (err) {
-            setError(err.message)
-        } finally {
-            setLoading(false)
-        }
+      if (error) throw error
+      navigate('/')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    return (
-        <div className="auth-container">
-            <div className="auth-card">
-                <div className="auth-header">
-                    <div className="auth-logo">
-                        <LogIn size={32} />
-                    </div>
-                    <h1>Welcome Back</h1>
-                    <p>Login to your LeadCRM account</p>
-                </div>
+  return (
+    <div className="auth-container">
+      <div className="auth-card">
+        <div className="auth-header">
+          <div className="auth-logo">
+            <LogIn size={32} />
+          </div>
+          <h1>Welcome Back</h1>
+          <p>Login to your LeadCRM account</p>
+        </div>
 
-                {error && (
-                    <div className="auth-error">
-                        <AlertCircle size={18} />
-                        <span>{error}</span>
-                    </div>
-                )}
+        {error && (
+          <div className="auth-error">
+            <AlertCircle size={18} />
+            <span>{error}</span>
+          </div>
+        )}
 
-                <form onSubmit={handleLogin} className="auth-form">
-                    <div className="form-group">
-                        <label>Email Address</label>
-                        <div className="input-with-icon">
-                            <Mail size={18} />
-                            <input
-                                type="email"
-                                placeholder="email@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label>Password</label>
-                        <div className="input-with-icon">
-                            <Lock size={18} />
-                            <input
-                                type="password"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <button type="submit" className="btn btn-primary auth-btn" disabled={loading}>
-                        {loading ? <Loader2 className="animate-spin" size={20} /> : 'Login'}
-                    </button>
-                </form>
-
-                <div className="auth-footer">
-                    <p>Don't have an account? <Link to="/register">Register here</Link></p>
-                </div>
+        <form onSubmit={handleLogin} className="auth-form">
+          <div className="form-group">
+            <label>Email Address</label>
+            <div className="input-with-icon">
+              <Mail size={18} />
+              <input
+                type="email"
+                placeholder="email@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
+          </div>
 
-            <style>{`
+          <div className="form-group">
+            <label>Password</label>
+            <div className="input-with-icon">
+              <Lock size={18} />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="btn btn-primary auth-btn" disabled={loading}>
+            {loading ? <Loader2 className="animate-spin" size={20} /> : 'Login'}
+          </button>
+        </form>
+      </div>
+
+      <style>{`
         .auth-container {
           min-height: 100vh;
           display: flex;
@@ -210,8 +206,8 @@ function Login() {
           animation: spin 1s linear infinite;
         }
       `}</style>
-        </div>
-    )
+    </div>
+  )
 }
 
 export default Login

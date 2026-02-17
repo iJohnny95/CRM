@@ -13,7 +13,7 @@ import Activity from './pages/Activity'
 import Calendar from './pages/Calendar'
 import Team from './pages/Team'
 import Login from './pages/auth/Login'
-import Register from './pages/auth/Register'
+import ChangePassword from './pages/auth/ChangePassword'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useEffect } from 'react'
 import useStore from './store/useStore'
@@ -41,7 +41,7 @@ function App() {
             <Routes>
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+                <Route path="/change-password" element={<ChangePassword />} />
 
                 {/* Protected CRM Routes */}
                 <Route element={<ProtectedRoute />}>
