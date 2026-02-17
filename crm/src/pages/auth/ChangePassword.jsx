@@ -1,111 +1,126 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Lock, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react'
+import { Lock, ShieldCheck, AlertCircle, Loader2, User } from 'lucide-react'
 
 function ChangePassword() {
-    const [password, setPassword] = useState('')
-    const [confirmPassword, setConfirmPassword] = useState('')
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(null)
-    const navigate = useNavigate()
+  const [fullName, setFullName] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
-    const handleChangePassword = async (e) => {
-        e.preventDefault()
+  const handleChangePassword = async (e) => {
+    e.preventDefault()
 
-        if (password !== confirmPassword) {
-            setError('Passwords do not match')
-            return
-        }
-
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters')
-            return
-        }
-
-        setLoading(true)
-        setError(null)
-
-        try {
-            // 1. Update the password
-            const { error: updateError } = await supabase.auth.updateUser({
-                password: password
-            })
-
-            if (updateError) throw updateError
-
-            // 2. Clear the metadata flag
-            // Note: In some Supabase setups, you might want to update a profile record instead
-            // but here we use user_metadata as planned.
-            const { error: metaError } = await supabase.auth.updateUser({
-                data: { needs_password_change: false }
-            })
-
-            if (metaError) throw metaError
-
-            // Success! Redirect to dashboard
-            navigate('/')
-        } catch (err) {
-            setError(err.message)
-        } finally {
-            setLoading(false)
-        }
+    if (!fullName.trim()) {
+      setError('Please enter your full name')
+      return
     }
 
-    return (
-        <div className="auth-container">
-            <div className="auth-card">
-                <div className="auth-header">
-                    <div className="auth-logo">
-                        <ShieldCheck size={32} />
-                    </div>
-                    <h1>Set New Password</h1>
-                    <p>To secure your account, please set a new password.</p>
-                </div>
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
 
-                {error && (
-                    <div className="auth-error">
-                        <AlertCircle size={18} />
-                        <span>{error}</span>
-                    </div>
-                )}
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
 
-                <form onSubmit={handleChangePassword} className="auth-form">
-                    <div className="form-group">
-                        <label>New Password</label>
-                        <div className="input-with-icon">
-                            <Lock size={18} />
-                            <input
-                                type="password"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
+    setLoading(true)
+    setError(null)
 
-                    <div className="form-group">
-                        <label>Confirm Password</label>
-                        <div className="input-with-icon">
-                            <Lock size={18} />
-                            <input
-                                type="password"
-                                placeholder="••••••••"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
+    try {
+      // Update password and metadata (full_name and clearing the flag)
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password,
+        data: {
+          full_name: fullName,
+          needs_password_change: false
+        }
+      })
 
-                    <button type="submit" className="btn btn-primary auth-btn" disabled={loading}>
-                        {loading ? <Loader2 className="animate-spin" size={20} /> : 'Update Password'}
-                    </button>
-                </form>
+      if (updateError) throw updateError
+
+      // Success! Redirect to dashboard
+      navigate('/')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="auth-container">
+      <div className="auth-card">
+        <div className="auth-header">
+          <div className="auth-logo">
+            <ShieldCheck size={32} />
+          </div>
+          <h1>Complete Your Profile</h1>
+          <p>Please set your name and a new password to continue.</p>
+        </div>
+
+        {error && (
+          <div className="auth-error">
+            <AlertCircle size={18} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleChangePassword} className="auth-form">
+          <div className="form-group">
+            <label>Full Name</label>
+            <div className="input-with-icon">
+              <User size={18} />
+              <input
+                type="text"
+                placeholder="John Doe"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+              />
             </div>
+          </div>
 
-            <style>{`
+          <div className="form-group">
+            <label>New Password</label>
+            <div className="input-with-icon">
+              <Lock size={18} />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Confirm Password</label>
+            <div className="input-with-icon">
+              <Lock size={18} />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="btn btn-primary auth-btn" disabled={loading}>
+            {loading ? <Loader2 className="animate-spin" size={20} /> : 'Complete Setup'}
+          </button>
+        </form>
+      </div>
+
+      <style>{`
         .auth-container {
           min-height: 100vh;
           display: flex;
@@ -228,8 +243,8 @@ function ChangePassword() {
           animation: spin 1s linear infinite;
         }
       `}</style>
-        </div>
-    )
+    </div>
+  )
 }
 
 export default ChangePassword
